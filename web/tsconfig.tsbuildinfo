@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/api/index.ts","./src/components/MainLayout.tsx","./src/contexts/ThemeContext.tsx","./src/pages/Category.tsx","./src/pages/Dashboard.tsx","./src/pages/Hot.tsx","./src/pages/Player.tsx","./src/pages/Trend.tsx","./src/pages/Uploader.tsx"],"version":"5.6.3"}
