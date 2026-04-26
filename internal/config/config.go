@@ -16,6 +16,7 @@ type Config struct {
 	Crawler    CrawlerConfig
 	Server     ServerConfig
 	Bilibili   BilibiliConfig
+	Notify     NotifyConfig
 }
 
 // PostgreSQLConfig holds connection parameters for PostgreSQL.
@@ -53,6 +54,16 @@ type ServerConfig struct {
 // BilibiliConfig holds the B站 user cookie for video stream proxy.
 type BilibiliConfig struct {
 	SESSDATA string
+}
+
+// NotifyConfig holds notification channel configuration.
+// All fields are optional – empty means the channel is disabled.
+type NotifyConfig struct {
+	TelegramBotToken string
+	TelegramChatID   string
+	DingTalkWebhook  string
+	FeishuWebhook    string
+	FeishuSecret     string
 }
 
 // DSN returns a PostgreSQL connection string in key=value format
@@ -99,6 +110,13 @@ func Load() (*Config, error) {
 		},
 		Bilibili: BilibiliConfig{
 			SESSDATA: getEnv("BILIBILI_SESSDATA", ""),
+		},
+		Notify: NotifyConfig{
+			TelegramBotToken: getEnv("TELEGRAM_BOT_TOKEN", ""),
+			TelegramChatID:   getEnv("TELEGRAM_CHAT_ID", ""),
+			DingTalkWebhook:  getEnv("DINGTALK_WEBHOOK", ""),
+			FeishuWebhook:    getEnv("FEISHU_WEBHOOK", ""),
+			FeishuSecret:     getEnv("FEISHU_SECRET", ""),
 		},
 	}
 

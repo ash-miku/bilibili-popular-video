@@ -25,14 +25,9 @@ import {
   type VideoStat,
 } from '../api'
 import { useVideoModal } from './Player'
+import { formatCount } from '../utils/format'
 
 echarts.use([PieChart, TitleComponent, TooltipComponent, LegendComponent, CanvasRenderer])
-
-function formatCount(n: number): string {
-  if (n >= 100_000_000) return (n / 100_000_000).toFixed(1).replace(/\.0$/, '') + '亿'
-  if (n >= 10_000) return (n / 10_000).toFixed(1).replace(/\.0$/, '') + '万'
-  return n.toLocaleString()
-}
 
 const today = () => {
   const now = dayjs()
@@ -212,9 +207,9 @@ const Dashboard: React.FC = () => {
       message.success(`同步成功！日期: ${result.date}`)
       const date = today()
       const [ov, rk, cd] = await Promise.all([
-        getOverview(date).catch(() => null),
-        getRanking({ page: 1, pageSize: 20, date }).catch(() => null),
-        getCategoryDistribution(date).catch(() => null),
+        getOverview(date).catch((err: Error) => { message.error('数据刷新失败: ' + err.message); return null }),
+        getRanking({ page: 1, pageSize: 20, date }).catch((err: Error) => { message.error('数据刷新失败: ' + err.message); return null }),
+        getCategoryDistribution(date).catch((err: Error) => { message.error('数据刷新失败: ' + err.message); return null }),
       ])
       if (ov) setOverview(ov)
       if (rk) setRanking(rk.list ?? [])

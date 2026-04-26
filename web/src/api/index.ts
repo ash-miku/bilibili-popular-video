@@ -90,7 +90,34 @@ export const getHotTags = (date?: string, limit?: number) =>
 export const getHotRanking = (params?: { start?: string; end?: string; partitionName?: string; page?: number; pageSize?: number }) =>
   request<PaginatedData<VideoStat>>('/hot/ranking', params as Record<string, string | number>)
 
+export interface LaunchCurveStat {
+  snapshot_date: string
+  bvid: string
+  title: string
+  uploader_mid: number
+  uploader_name: string
+  partition_id: number
+  partition_name: string
+  view_count: number
+  danmaku_count: number
+  reply_count: number
+  favorite_count: number
+  coin_count: number
+  share_count: number
+  like_count: number
+  rank_position: number | null
+}
+
+export const getLaunchCurve = (bvid: string) =>
+  request<LaunchCurveStat[]>('/trend/launch-curve', { bvid })
+
 export const syncData = async (): Promise<{ status: string; date: string }> => {
   const res = await api.post<{ status: string; date: string }>('/admin/sync')
   return res.data
 }
+
+export const searchVideos = (q: string, page?: number, pageSize?: number) =>
+  request<PaginatedData<VideoStat>>('/search', { q, type: 'video', ...(page ? { page } : {}), ...(pageSize ? { pageSize } : {}) })
+
+export const searchUploaders = (q: string, page?: number, pageSize?: number) =>
+  request<PaginatedData<UploaderStat>>('/search', { q, type: 'uploader', ...(page ? { page } : {}), ...(pageSize ? { pageSize } : {}) })

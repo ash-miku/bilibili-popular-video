@@ -29,7 +29,9 @@ func NewSyncer(pgPool *pgxpool.Pool, chStats *ch.StatsRepo) *Syncer {
 }
 
 // SyncDaily reads snapshots and uploader stats for the given date from
-// PostgreSQL and writes them into ClickHouse.
+// PostgreSQL and writes them into ClickHouse. Both target tables use
+// ReplacingMergeTree, so duplicates are eliminated automatically by
+// OPTIMIZE FINAL after each batch insert.
 func (s *Syncer) SyncDaily(ctx context.Context, date time.Time) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -43,13 +45,13 @@ func (s *Syncer) SyncDaily(ctx context.Context, date time.Time) error {
 	slog.Info("sync: fetched video snapshots", "date", dateStr, "count", len(videoStats))
 
 	if len(videoStats) > 0 {
-		if err := s.chStats.DeleteDailyStats(ctx, date); err != nil {
-			return fmt.Errorf("delete old video daily stats for %s: %w", dateStr, err)
-		}
 		if err := s.chStats.InsertDailyStats(ctx, videoStats); err != nil {
 			return fmt.Errorf("insert video daily stats to ch for %s: %w", dateStr, err)
 		}
-		slog.Info("sync: replaced video daily stats", "date", dateStr, "count", len(videoStats))
+		if err := s.chStats.OptimizeDailyStats(ctx, date); err != nil {
+			slog.Warn("sync: optimize video stats failed (non-fatal)", "error", err)
+		}
+		slog.Info("sync: inserted video daily stats", "date", dateStr, "count", len(videoStats))
 	}
 
 	uploaderStats, err := s.pgSnap.GetUploaderStatsForSync(ctx, date)
@@ -59,13 +61,13 @@ func (s *Syncer) SyncDaily(ctx context.Context, date time.Time) error {
 	slog.Info("sync: fetched uploader stats", "date", dateStr, "count", len(uploaderStats))
 
 	if len(uploaderStats) > 0 {
-		if err := s.chStats.DeleteUploaderStats(ctx, date); err != nil {
-			return fmt.Errorf("delete old uploader stats for %s: %w", dateStr, err)
-		}
 		if err := s.chStats.InsertUploaderStats(ctx, uploaderStats); err != nil {
 			return fmt.Errorf("insert uploader stats to ch for %s: %w", dateStr, err)
 		}
-		slog.Info("sync: replaced uploader stats", "date", dateStr, "count", len(uploaderStats))
+		if err := s.chStats.OptimizeUploaderStats(ctx, date); err != nil {
+			slog.Warn("sync: optimize uploader stats failed (non-fatal)", "error", err)
+		}
+		slog.Info("sync: inserted uploader stats", "date", dateStr, "count", len(uploaderStats))
 	}
 
 	slog.Info("sync daily completed", "date", dateStr,

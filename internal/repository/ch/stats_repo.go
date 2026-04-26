@@ -1,3 +1,10 @@
+// Package ch provides read/write access to ClickHouse analytics tables
+// for the Bilibili popular video platform.
+//
+// TODO: Replace hardcoded table names ("video_daily_stats", "uploader_stats")
+// with constants or config so that schema migrations can create tables with
+// the correct engine directly — eliminating the need for migration 003's
+// RENAME approach.
 package ch
 
 import (
@@ -24,15 +31,31 @@ func NewStatsRepo(conn clickhouse.Conn) *StatsRepo {
 // ---------------------------------------------------------------------------
 
 func (r *StatsRepo) DeleteDailyStats(ctx context.Context, date time.Time) error {
-	if err := r.conn.Exec(ctx, `ALTER TABLE video_daily_stats DELETE WHERE snapshot_date = $1 SETTINGS mutations_sync = 1`, date); err != nil {
+	if err := r.conn.Exec(ctx, `ALTER TABLE video_daily_stats DELETE WHERE snapshot_date = $1 SETTINGS mutations_sync = 2`, date); err != nil {
 		return fmt.Errorf("delete daily stats for %s: %w", date.Format("2006-01-02"), err)
 	}
 	return nil
 }
 
 func (r *StatsRepo) DeleteUploaderStats(ctx context.Context, date time.Time) error {
-	if err := r.conn.Exec(ctx, `ALTER TABLE uploader_stats DELETE WHERE stat_date = $1 SETTINGS mutations_sync = 1`, date); err != nil {
+	if err := r.conn.Exec(ctx, `ALTER TABLE uploader_stats DELETE WHERE stat_date = $1 SETTINGS mutations_sync = 2`, date); err != nil {
 		return fmt.Errorf("delete uploader stats for %s: %w", date.Format("2006-01-02"), err)
+	}
+	return nil
+}
+
+func (r *StatsRepo) OptimizeDailyStats(ctx context.Context, date time.Time) error {
+	partition := date.Format("200601")
+	if err := r.conn.Exec(ctx, `OPTIMIZE TABLE video_daily_stats PARTITION ID '`+partition+`' FINAL`); err != nil {
+		return fmt.Errorf("optimize daily stats partition %s: %w", partition, err)
+	}
+	return nil
+}
+
+func (r *StatsRepo) OptimizeUploaderStats(ctx context.Context, date time.Time) error {
+	partition := date.Format("200601")
+	if err := r.conn.Exec(ctx, `OPTIMIZE TABLE uploader_stats PARTITION ID '`+partition+`' FINAL`); err != nil {
+		return fmt.Errorf("optimize uploader stats partition %s: %w", partition, err)
 	}
 	return nil
 }
@@ -61,6 +84,7 @@ func (r *StatsRepo) InsertDailyStats(ctx context.Context, stats []model.VideoDai
 			s.ShareCount,
 			s.LikeCount,
 			s.RankPosition,
+			s.Tags,
 		); err != nil {
 			return fmt.Errorf("append daily stat row %d (bvid=%s): %w", i, s.Bvid, err)
 		}
@@ -155,6 +179,7 @@ func (r *StatsRepo) GetRanking(ctx context.Context, date time.Time, partitionId 
 				argMax(uploader_name, snapshot_date) AS uploader_name,
 				partition_id,
 				argMax(partition_name, snapshot_date) AS partition_name,
+				any(tags) AS tags,
 				argMax(view_count, snapshot_date) AS view_count,
 				argMax(danmaku_count, snapshot_date) AS danmaku_count,
 				argMax(reply_count, snapshot_date) AS reply_count,
@@ -183,6 +208,7 @@ func (r *StatsRepo) GetRanking(ctx context.Context, date time.Time, partitionId 
 				argMax(uploader_name, snapshot_date) AS uploader_name,
 				argMax(partition_id, snapshot_date) AS partition_id,
 				argMax(partition_name, snapshot_date) AS partition_name,
+				any(tags) AS tags,
 				argMax(view_count, snapshot_date) AS view_count,
 				argMax(danmaku_count, snapshot_date) AS danmaku_count,
 				argMax(reply_count, snapshot_date) AS reply_count,
@@ -216,7 +242,7 @@ func (r *StatsRepo) GetRanking(ctx context.Context, date time.Time, partitionId 
 		var s model.VideoDailyStat
 		if err := rows.Scan(
 			&s.SnapshotDate, &s.Bvid, &s.Title, &s.UploaderMid, &s.UploaderName,
-			&s.PartitionId, &s.PartitionName, &s.ViewCount, &s.DanmakuCount,
+			&s.PartitionId, &s.PartitionName, &s.Tags, &s.ViewCount, &s.DanmakuCount,
 			&s.ReplyCount, &s.FavoriteCount, &s.CoinCount, &s.ShareCount,
 			&s.LikeCount, &s.RankPosition,
 		); err != nil {
@@ -232,10 +258,48 @@ func (r *StatsRepo) GetRanking(ctx context.Context, date time.Time, partitionId 
 	return result, int(total), nil
 }
 
+// GetLaunchCurve returns all daily stats for a given video, ordered by
+// snapshot_date ascending. The caller can compute growth deltas (24h, 3-day,
+// 7-day) from the returned data.
+func (r *StatsRepo) GetLaunchCurve(ctx context.Context, bvid string) ([]model.VideoDailyStat, error) {
+	rows, err := r.conn.Query(ctx, `
+		SELECT snapshot_date, bvid, title, uploader_mid, uploader_name,
+		       partition_id, partition_name, tags, view_count, danmaku_count,
+		       reply_count, favorite_count, coin_count, share_count,
+		       like_count, rank_position
+		FROM video_daily_stats
+		WHERE bvid = $1
+		ORDER BY snapshot_date ASC
+	`, bvid)
+	if err != nil {
+		return nil, fmt.Errorf("query launch curve for bvid=%s: %w", bvid, err)
+	}
+	defer rows.Close()
+
+	var result []model.VideoDailyStat
+	for rows.Next() {
+		var s model.VideoDailyStat
+		if err := rows.Scan(
+			&s.SnapshotDate, &s.Bvid, &s.Title, &s.UploaderMid, &s.UploaderName,
+			&s.PartitionId, &s.PartitionName, &s.Tags, &s.ViewCount, &s.DanmakuCount,
+			&s.ReplyCount, &s.FavoriteCount, &s.CoinCount, &s.ShareCount,
+			&s.LikeCount, &s.RankPosition,
+		); err != nil {
+			return nil, fmt.Errorf("scan launch curve row: %w", err)
+		}
+		result = append(result, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate launch curve rows: %w", err)
+	}
+	return result, nil
+}
+
 func (r *StatsRepo) GetVideoTrend(ctx context.Context, bvid string, start, end time.Time) ([]model.VideoDailyStat, error) {
 	rows, err := r.conn.Query(ctx, `
 		SELECT snapshot_date, bvid, title, uploader_mid, uploader_name,
-		       partition_id, partition_name, view_count, danmaku_count,
+		       partition_id, partition_name, tags, view_count, danmaku_count,
 		       reply_count, favorite_count, coin_count, share_count,
 		       like_count, rank_position
 		FROM video_daily_stats
@@ -252,7 +316,7 @@ func (r *StatsRepo) GetVideoTrend(ctx context.Context, bvid string, start, end t
 		var s model.VideoDailyStat
 		if err := rows.Scan(
 			&s.SnapshotDate, &s.Bvid, &s.Title, &s.UploaderMid, &s.UploaderName,
-			&s.PartitionId, &s.PartitionName, &s.ViewCount, &s.DanmakuCount,
+			&s.PartitionId, &s.PartitionName, &s.Tags, &s.ViewCount, &s.DanmakuCount,
 			&s.ReplyCount, &s.FavoriteCount, &s.CoinCount, &s.ShareCount,
 			&s.LikeCount, &s.RankPosition,
 		); err != nil {
@@ -274,7 +338,7 @@ func (r *StatsRepo) GetRankingChange(ctx context.Context, start, end time.Time, 
 		SELECT
 			latest.snapshot_date, latest.bvid, latest.title,
 			latest.uploader_mid, latest.uploader_name,
-			latest.partition_id, latest.partition_name,
+			latest.partition_id, latest.partition_name, latest.tags,
 			latest.view_count, latest.danmaku_count, latest.reply_count,
 			latest.favorite_count, latest.coin_count, latest.share_count,
 			latest.like_count, latest.rank_position
@@ -298,7 +362,7 @@ func (r *StatsRepo) GetRankingChange(ctx context.Context, start, end time.Time, 
 		var s model.VideoDailyStat
 		if err := rows.Scan(
 			&s.SnapshotDate, &s.Bvid, &s.Title, &s.UploaderMid, &s.UploaderName,
-			&s.PartitionId, &s.PartitionName, &s.ViewCount, &s.DanmakuCount,
+			&s.PartitionId, &s.PartitionName, &s.Tags, &s.ViewCount, &s.DanmakuCount,
 			&s.ReplyCount, &s.FavoriteCount, &s.CoinCount, &s.ShareCount,
 			&s.LikeCount, &s.RankPosition,
 		); err != nil {
@@ -528,14 +592,17 @@ func (r *StatsRepo) GetPartitionList(ctx context.Context) ([]PartitionItem, erro
 }
 
 // GetHotTags returns the top `limit` tags across all videos on the given date.
-// Tags are extracted from the partition_name field as a proxy since the
-// video_daily_stats table stores partition_name but not a dedicated tags column.
+// Tags are extracted from the video_daily_stats.tags Array(String) column using
+// arrayJoin to flatten the per-video tag arrays into individual tag rows.
 func (r *StatsRepo) GetHotTags(ctx context.Context, date time.Time, limit int) (map[string]int, error) {
 	rows, err := r.conn.Query(ctx, `
-		SELECT partition_name, count() AS cnt
-		FROM video_daily_stats
-		WHERE snapshot_date = $1
-		GROUP BY partition_name
+		SELECT tag, count() AS cnt
+		FROM (
+			SELECT arrayJoin(tags) AS tag
+			FROM video_daily_stats
+			WHERE snapshot_date = $1
+		)
+		GROUP BY tag
 		ORDER BY cnt DESC
 		LIMIT $2
 	`, date, uint64(limit))
@@ -546,12 +613,12 @@ func (r *StatsRepo) GetHotTags(ctx context.Context, date time.Time, limit int) (
 
 	result := make(map[string]int)
 	for rows.Next() {
-		var name string
+		var tag string
 		var cnt uint64
-		if err := rows.Scan(&name, &cnt); err != nil {
+		if err := rows.Scan(&tag, &cnt); err != nil {
 			return nil, fmt.Errorf("scan hot tags row: %w", err)
 		}
-		result[name] = int(cnt)
+		result[tag] = int(cnt)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -584,7 +651,7 @@ func (r *StatsRepo) GetHotRanking(ctx context.Context, start, end time.Time, par
 
 		dataQuery = `
 			SELECT v.snapshot_date, v.bvid, v.title, v.uploader_mid, v.uploader_name,
-			       v.partition_id, v.partition_name, v.view_count, v.danmaku_count,
+			       v.partition_id, v.partition_name, v.tags, v.view_count, v.danmaku_count,
 			       v.reply_count, v.favorite_count, v.coin_count, v.share_count,
 			       v.like_count, v.rank_position
 			` + baseJoin + `
@@ -600,7 +667,7 @@ func (r *StatsRepo) GetHotRanking(ctx context.Context, start, end time.Time, par
 
 		dataQuery = `
 			SELECT v.snapshot_date, v.bvid, v.title, v.uploader_mid, v.uploader_name,
-			       v.partition_id, v.partition_name, v.view_count, v.danmaku_count,
+			       v.partition_id, v.partition_name, v.tags, v.view_count, v.danmaku_count,
 			       v.reply_count, v.favorite_count, v.coin_count, v.share_count,
 			       v.like_count, v.rank_position
 			` + baseJoin + `
@@ -627,7 +694,7 @@ func (r *StatsRepo) GetHotRanking(ctx context.Context, start, end time.Time, par
 		var s model.VideoDailyStat
 		if err := rows.Scan(
 			&s.SnapshotDate, &s.Bvid, &s.Title, &s.UploaderMid, &s.UploaderName,
-			&s.PartitionId, &s.PartitionName, &s.ViewCount, &s.DanmakuCount,
+			&s.PartitionId, &s.PartitionName, &s.Tags, &s.ViewCount, &s.DanmakuCount,
 			&s.ReplyCount, &s.FavoriteCount, &s.CoinCount, &s.ShareCount,
 			&s.LikeCount, &s.RankPosition,
 		); err != nil {
@@ -638,6 +705,128 @@ func (r *StatsRepo) GetHotRanking(ctx context.Context, start, end time.Time, par
 
 	if err := rows.Err(); err != nil {
 		return nil, 0, fmt.Errorf("iterate hot ranking rows: %w", err)
+	}
+
+	return result, int(total), nil
+}
+
+// ---------------------------------------------------------------------------
+// Search queries
+// ---------------------------------------------------------------------------
+
+// SearchVideos performs a full-text search across video_daily_stats for videos
+// whose title contains the query string (case-insensitive). It returns the
+// latest snapshot for each matching bvid, along with the total count for
+// pagination.
+func (r *StatsRepo) SearchVideos(ctx context.Context, query string, page, pageSize int) ([]model.VideoDailyStat, int, error) {
+	offset := (page - 1) * pageSize
+
+	baseJoin := `
+		FROM video_daily_stats v
+		INNER JOIN (
+			SELECT bvid, max(snapshot_date) AS max_date
+			FROM video_daily_stats
+			GROUP BY bvid
+		) latest ON v.bvid = latest.bvid AND v.snapshot_date = latest.max_date
+	`
+
+	var total uint64
+	if err := r.conn.QueryRow(ctx,
+		"SELECT count(DISTINCT v.bvid) "+baseJoin+" WHERE positionCaseInsensitive(v.title, $1) > 0",
+		query,
+	).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count search videos for q=%s: %w", query, err)
+	}
+
+	rows, err := r.conn.Query(ctx, `
+		SELECT v.snapshot_date, v.bvid, v.title, v.uploader_mid, v.uploader_name,
+		       v.partition_id, v.partition_name, v.tags, v.view_count, v.danmaku_count,
+		       v.reply_count, v.favorite_count, v.coin_count, v.share_count,
+		       v.like_count, v.rank_position
+	`+baseJoin+`
+		WHERE positionCaseInsensitive(v.title, $1) > 0
+		ORDER BY v.view_count DESC
+		LIMIT 1 BY v.bvid
+		LIMIT $2 OFFSET $3
+	`, query, uint64(pageSize), uint64(offset))
+	if err != nil {
+		return nil, 0, fmt.Errorf("query search videos for q=%s: %w", query, err)
+	}
+	defer rows.Close()
+
+	var result []model.VideoDailyStat
+	for rows.Next() {
+		var s model.VideoDailyStat
+		if err := rows.Scan(
+			&s.SnapshotDate, &s.Bvid, &s.Title, &s.UploaderMid, &s.UploaderName,
+			&s.PartitionId, &s.PartitionName, &s.Tags, &s.ViewCount, &s.DanmakuCount,
+			&s.ReplyCount, &s.FavoriteCount, &s.CoinCount, &s.ShareCount,
+			&s.LikeCount, &s.RankPosition,
+		); err != nil {
+			return nil, 0, fmt.Errorf("scan search videos row: %w", err)
+		}
+		result = append(result, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate search videos rows: %w", err)
+	}
+
+	return result, int(total), nil
+}
+
+// SearchUploaders performs a full-text search across uploader_stats for
+// uploaders whose name contains the query string (case-insensitive). It returns
+// the latest stat for each matching uploader_mid, along with the total count
+// for pagination.
+func (r *StatsRepo) SearchUploaders(ctx context.Context, query string, page, pageSize int) ([]model.UploaderStat, int, error) {
+	offset := (page - 1) * pageSize
+
+	baseJoin := `
+		FROM uploader_stats u
+		INNER JOIN (
+			SELECT uploader_mid, max(stat_date) AS max_date
+			FROM uploader_stats
+			GROUP BY uploader_mid
+		) latest ON u.uploader_mid = latest.uploader_mid AND u.stat_date = latest.max_date
+	`
+
+	var total uint64
+	if err := r.conn.QueryRow(ctx,
+		"SELECT count(DISTINCT u.uploader_mid) "+baseJoin+" WHERE positionCaseInsensitive(u.uploader_name, $1) > 0",
+		query,
+	).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count search uploaders for q=%s: %w", query, err)
+	}
+
+	rows, err := r.conn.Query(ctx, `
+		SELECT u.stat_date, u.uploader_mid, u.uploader_name, u.video_count,
+		       u.total_views, u.total_likes, u.avg_views
+	`+baseJoin+`
+		WHERE positionCaseInsensitive(u.uploader_name, $1) > 0
+		ORDER BY u.total_views DESC
+		LIMIT 1 BY u.uploader_mid
+		LIMIT $2 OFFSET $3
+	`, query, uint64(pageSize), uint64(offset))
+	if err != nil {
+		return nil, 0, fmt.Errorf("query search uploaders for q=%s: %w", query, err)
+	}
+	defer rows.Close()
+
+	var result []model.UploaderStat
+	for rows.Next() {
+		var s model.UploaderStat
+		if err := rows.Scan(
+			&s.StatDate, &s.UploaderMid, &s.UploaderName, &s.VideoCount,
+			&s.TotalViews, &s.TotalLikes, &s.AvgViews,
+		); err != nil {
+			return nil, 0, fmt.Errorf("scan search uploaders row: %w", err)
+		}
+		result = append(result, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate search uploaders rows: %w", err)
 	}
 
 	return result, int(total), nil

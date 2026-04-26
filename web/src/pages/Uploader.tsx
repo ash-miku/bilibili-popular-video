@@ -10,6 +10,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import dayjs, { Dayjs } from 'dayjs'
 import { getTopUploaders, getUploaderDetail } from '../api'
 import type { UploaderStat } from '../api'
+import { formatCount } from '../utils/format'
 
 echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
@@ -20,12 +21,6 @@ const SORT_OPTIONS = [
   { label: '视频数', value: 'video_count' },
   { label: '平均播放', value: 'avg_views' },
 ] as const
-
-const formatCount = (n: number): string => {
-  if (n >= 100000000) return (n / 100000000).toFixed(1) + '亿'
-  if (n >= 10000) return (n / 10000).toFixed(1) + '万'
-  return n.toLocaleString()
-}
 
 const CHART_COLORS = {
   views: '#FB7299',
@@ -84,7 +79,7 @@ const Uploader: React.FC = () => {
       setData(res.list ?? [])
       setTotal(res.total ?? 0)
     } catch {
-      message.error('获取UP主排行数据失败')
+      message.error('UP主数据加载失败')
     } finally {
       setLoading(false)
     }
@@ -106,7 +101,7 @@ const Uploader: React.FC = () => {
         )
         setDetailData(res)
       } catch {
-        message.error('获取UP主详情失败')
+        message.error('UP主数据加载失败')
       } finally {
         setDetailLoading(false)
       }

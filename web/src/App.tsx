@@ -2,6 +2,7 @@ import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ConfigProvider, theme } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
+import ErrorBoundary from './components/ErrorBoundary'
 import MainLayout from './components/MainLayout'
 import Dashboard from './pages/Dashboard'
 import Trend from './pages/Trend'
@@ -9,6 +10,8 @@ import Uploader from './pages/Uploader'
 import Category from './pages/Category'
 import Hot from './pages/Hot'
 import Player, { VideoModalProvider } from './pages/Player'
+import Search from './pages/Search'
+import NotFound from './pages/NotFound'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import './styles/global.css'
 
@@ -83,17 +86,21 @@ const ThemedApp: React.FC = () => {
     >
       <BrowserRouter>
         <VideoModalProvider>
-          <Routes>
-            <Route path="/" element={<MainLayout />}>
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="hot" element={<Hot />} />
-              <Route path="trend" element={<Trend />} />
-              <Route path="uploader" element={<Uploader />} />
-              <Route path="category" element={<Category />} />
-              <Route path="player" element={<Player />} />
-            </Route>
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<MainLayout />}>
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="hot" element={<Hot />} />
+                <Route path="trend" element={<Trend />} />
+                <Route path="uploader" element={<Uploader />} />
+                <Route path="category" element={<Category />} />
+                <Route path="player" element={<Player />} />
+                <Route path="search" element={<Search />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </ErrorBoundary>
         </VideoModalProvider>
       </BrowserRouter>
     </ConfigProvider>

@@ -46,6 +46,27 @@ func (h *TrendHandler) VideoTrend(c *gin.Context) {
 	success(c, stats)
 }
 
+// LaunchCurve handles GET /api/v1/trend/launch-curve?bvid=xxx
+func (h *TrendHandler) LaunchCurve(c *gin.Context) {
+	bvid := c.Query("bvid")
+	if bvid == "" {
+		fail(c, -1, "bvid is required")
+		return
+	}
+
+	stats, err := h.statsRepo.GetLaunchCurve(c.Request.Context(), bvid)
+	if err != nil {
+		slog.Error("launch curve query failed",
+			"bvid", bvid,
+			"error", err,
+		)
+		fail(c, -1, err.Error())
+		return
+	}
+
+	success(c, stats)
+}
+
 // RankingChange handles GET /api/v1/trend/ranking-change?start=2026-04-18&end=2026-04-25&limit=20
 func (h *TrendHandler) RankingChange(c *gin.Context) {
 	start, end, err := getDateRange(c)

@@ -72,9 +72,10 @@ type VideoDailyStat struct {
 	Title         string    `json:"title"          db:"title"`
 	UploaderMid   int64     `json:"uploader_mid"   db:"uploader_mid"`
 	UploaderName  string    `json:"uploader_name"  db:"uploader_name"`
-	PartitionId   int32     `json:"partition_id"   db:"partition_id"`
-	PartitionName string    `json:"partition_name" db:"partition_name"`
-	ViewCount     int64     `json:"view_count"     db:"view_count"`
+	PartitionId   int32    `json:"partition_id"   db:"partition_id"`
+	PartitionName string   `json:"partition_name" db:"partition_name"`
+	Tags          []string `json:"tags"           db:"tags"`
+	ViewCount     int64    `json:"view_count"     db:"view_count"`
 	DanmakuCount  int32     `json:"danmaku_count"  db:"danmaku_count"`
 	ReplyCount    int32     `json:"reply_count"    db:"reply_count"`
 	FavoriteCount int32     `json:"favorite_count" db:"favorite_count"`

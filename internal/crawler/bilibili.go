@@ -28,8 +28,9 @@ type biliResponse struct {
 	Data    json.RawMessage `json:"data"`
 }
 
-type rankingResponse struct {
-	List []rankingItem `json:"list"`
+type popularResponse struct {
+	List   []rankingItem `json:"list"`
+	NoMore bool          `json:"no_more"`
 }
 
 type rankingItem struct {
@@ -65,11 +66,6 @@ type rankingStat struct {
 	NowRank  int   `json:"now_rank"`
 }
 
-type popularResponse struct {
-	List   []rankingItem `json:"list"`
-	NoMore bool          `json:"no_more"`
-}
-
 type tagResponse []tagItem
 
 type tagItem struct {
@@ -93,36 +89,7 @@ type cardData struct {
 // BilibiliCrawler
 // ---------------------------------------------------------------------------
 
-// partitions maps rid values to their Chinese names for major Bilibili content
-// partitions used during the hourly ranking crawl.
-var partitions = map[int]string{
-	0:   "全站",
-	1:   "动画",
-	3:   "音乐",
-	4:   "游戏",
-	5:   "娱乐",
-	36:  "知识",
-	119: "鬼畜",
-	129: "舞蹈",
-	155: "时尚",
-	160: "生活",
-	168: "国创",
-	181: "影视",
-	188: "数码",
-	211: "美食",
-	217: "动物",
-	223: "汽车",
-	234: "运动",
-	247: "资讯",
-}
-
-// partitionRIDs is the ordered list of partition IDs to crawl.
-var partitionRIDs = []int{
-	0, 1, 3, 4, 5, 36, 119, 129, 155, 160, 168, 181, 188, 211, 217, 223, 234, 247,
-}
-
 const (
-	rankingAPIURL  = "https://api.bilibili.com/x/web-interface/ranking/v2"
 	popularAPIURL  = "https://api.bilibili.com/x/web-interface/popular"
 	tagsAPIURL     = "https://api.bilibili.com/x/tag/archive/tags"
 	userCardAPIURL = "https://api.bilibili.com/x/web-interface/card"
@@ -158,36 +125,6 @@ func NewBilibiliCrawler(videoRepo *pg.VideoRepo, uploaderRepo *pg.UploaderRepo, 
 // ---------------------------------------------------------------------------
 // API fetch methods
 // ---------------------------------------------------------------------------
-
-// FetchRanking retrieves the current popular video ranking for the given partition
-// rid (0 = all partitions).
-func (c *BilibiliCrawler) FetchRanking(ctx context.Context, rid int) ([]rankingItem, error) {
-	url := fmt.Sprintf("%s?rid=%d&type=all", rankingAPIURL, rid)
-
-	var body []byte
-	err := retry(ctx, maxRetries, retryBaseDelay, func() error {
-		var reqErr error
-		body, reqErr = c.doGet(ctx, url)
-		return reqErr
-	})
-	if err != nil {
-		return nil, fmt.Errorf("fetch ranking rid=%d: %w", rid, err)
-	}
-
-	var resp biliResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("parse ranking response rid=%d: %w", rid, err)
-	}
-	if resp.Code != 0 {
-		return nil, fmt.Errorf("ranking api error rid=%d: code=%d message=%s", rid, resp.Code, resp.Message)
-	}
-
-	var ranking rankingResponse
-	if err := json.Unmarshal(resp.Data, &ranking); err != nil {
-		return nil, fmt.Errorf("parse ranking data rid=%d: %w", rid, err)
-	}
-	return ranking.List, nil
-}
 
 func (c *BilibiliCrawler) FetchPopular(ctx context.Context, pn, ps int) ([]rankingItem, error) {
 	url := fmt.Sprintf("%s?pn=%d&ps=%d", popularAPIURL, pn, ps)
@@ -505,10 +442,16 @@ func (c *BilibiliCrawler) doGet(ctx context.Context, url string) ([]byte, error)
 	return body, nil
 }
 
-// randomDelay sleeps for a random duration between 200ms and 500ms, respecting
-// context cancellation.
+// randomDelay sleeps for a random duration between 200ms and the configured
+// delayMs, respecting context cancellation. Falls back to 200-500ms if delayMs
+// is unset or zero.
 func (c *BilibiliCrawler) randomDelay(ctx context.Context) {
-	ms := 200 + rand.Intn(301) // 200-500
+	minDelay := 200
+	maxDelay := c.delayMs
+	if maxDelay <= minDelay {
+		maxDelay = 500
+	}
+	ms := minDelay + rand.Intn(maxDelay-minDelay+1)
 	delay := time.Duration(ms) * time.Millisecond
 
 	select {

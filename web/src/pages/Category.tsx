@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Row, Col, DatePicker, Select, Spin, Empty } from 'antd'
+import { Row, Col, DatePicker, Select, Spin, Empty, message } from 'antd'
 import ReactEChartsCore from 'echarts-for-react/lib/core'
 import * as echarts from 'echarts/core'
 import { BarChart, LineChart } from 'echarts/charts'
@@ -17,6 +17,7 @@ import {
   getHotTags,
   getPartitionList,
 } from '../api'
+import { formatCount } from '../utils/format'
 
 echarts.use([
   BarChart,
@@ -29,11 +30,6 @@ echarts.use([
 ])
 
 const { RangePicker } = DatePicker
-
-function formatCount(n: number): string {
-  if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, '') + '万'
-  return String(n)
-}
 
 interface PartitionOption {
   id: number
@@ -82,7 +78,7 @@ const Category: React.FC = () => {
       if (list && list.length > 0) {
         setPartitionOptions([{ id: 0, name: '全站' }, ...list])
       }
-    }).catch(() => {})
+    }).catch(() => { message.error('分区列表加载失败') })
   }, [])
 
   const fetchDistribution = useCallback(async (date?: string) => {
@@ -91,6 +87,7 @@ const Category: React.FC = () => {
       const data = await getCategoryDistribution(date)
       setDistribution(data)
     } catch {
+      message.error('分区分布加载失败')
       setDistribution({})
     } finally {
       setDistLoading(false)
@@ -104,9 +101,10 @@ const Category: React.FC = () => {
   const fetchHotTags = useCallback(async (date?: string) => {
     setTagsLoading(true)
     try {
-      const data = await getHotTags(date, 20)
+      const data = await getHotTags(date, 100)
       setHotTags(data)
     } catch {
+      message.error('热门标签加载失败')
       setHotTags({})
     } finally {
       setTagsLoading(false)
@@ -124,6 +122,7 @@ const Category: React.FC = () => {
         const data = await getCategoryTrend(id, start, end)
         setTrendData(data ?? [])
       } catch {
+        message.error('分区趋势加载失败')
         setTrendData([])
       } finally {
         setTrendLoading(false)
@@ -312,6 +311,39 @@ const Category: React.FC = () => {
     return Math.round(12 + ratio * 16)
   }
 
+  const tagCloudPalette = useMemo(() => [
+    '#FB7299', '#23ADE5', '#FFB027', '#F25D8E', '#00A1D6',
+  ], [])
+
+  const tagCloudItems = useMemo(() => {
+    const entries = Object.entries(hotTags)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 50)
+    if (entries.length === 0) return [] as { name: string; count: number; color: string; fontSize: number }[]
+
+    const counts = entries.map(([, c]) => c)
+    const min = Math.min(...counts)
+    const max = Math.max(...counts)
+    const seed = tagsDate.format('YYYY-MM-DD')
+
+    const hash = (s: string): number => {
+      let h = 0
+      for (let i = 0; i < s.length; i++) {
+        h = ((h << 5) - h) + s.charCodeAt(i)
+        h |= 0
+      }
+      return Math.abs(h)
+    }
+
+    return entries.map(([name, count]) => {
+      const colorIndex = hash(name + seed) % tagCloudPalette.length
+      const fontSize = max === min
+        ? 18
+        : Math.round(12 + ((count - min) / (max - min)) * 20)
+      return { name, count, color: tagCloudPalette[colorIndex], fontSize }
+    })
+  }, [hotTags, tagsDate, tagCloudPalette])
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <Row gutter={20}>
@@ -407,6 +439,38 @@ const Category: React.FC = () => {
           </div>
         </Col>
       </Row>
+
+      <div className="section-card">
+        <div className="section-header">
+          <div className="section-title">
+            <span className="title-dot" style={{ background: '#F25D8E' }} />
+            标签云
+          </div>
+        </div>
+        <div className="section-body">
+          {tagCloudItems.length === 0 ? (
+            <Empty description="暂无标签数据" />
+          ) : (
+            <div className="tag-cloud">
+              {tagCloudItems.map((item) => (
+                <span
+                  key={item.name}
+                  className="tag-cloud-item"
+                  style={{
+                    fontSize: item.fontSize,
+                    backgroundColor: item.color,
+                    color: '#fff',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onClick={() => message.info(`标签: ${item.name}`)}
+                >
+                  {item.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="section-card">
         <div className="section-header">

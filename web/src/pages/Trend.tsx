@@ -14,7 +14,8 @@ import {
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import dayjs, { Dayjs } from 'dayjs'
-import { getVideoTrend, getRankingChange, VideoStat } from '../api'
+import { getVideoTrend, getRankingChange, getLaunchCurve, VideoStat, LaunchCurveStat } from '../api'
+import { formatCount } from '../utils/format'
 
 interface TrendVideoStat extends VideoStat {
   snapshot_date?: string
@@ -30,12 +31,6 @@ echarts.use([
 ])
 
 const { RangePicker } = DatePicker
-
-function formatCount(n: number): string {
-  if (n >= 100_000_000) return (n / 100_000_000).toFixed(1) + '亿'
-  if (n >= 10_000) return (n / 10_000).toFixed(1) + '万'
-  return n.toLocaleString()
-}
 
 const SERIES_CONFIG = [
   { key: 'view_count', name: '播放量', color: '#FB7299' },
@@ -63,6 +58,9 @@ const Trend: React.FC = () => {
   const [rankData, setRankData] = useState<VideoStat[]>([])
   const [rankLoading, setRankLoading] = useState(false)
 
+  const [launchData, setLaunchData] = useState<LaunchCurveStat[]>([])
+  const [launchLoading, setLaunchLoading] = useState(false)
+
   const fetchRanking = useCallback(async () => {
     setRankLoading(true)
     try {
@@ -73,7 +71,7 @@ const Trend: React.FC = () => {
       )
       setRankData(data ?? [])
     } catch {
-      message.error('获取排行榜变动数据失败')
+      message.error('排名变化加载失败')
     } finally {
       setRankLoading(false)
     }
@@ -82,6 +80,23 @@ const Trend: React.FC = () => {
   useEffect(() => {
     fetchRanking()
   }, [fetchRanking])
+
+  const fetchLaunchCurve = useCallback(async (bvidParam?: string) => {
+    const targetBvid = bvidParam || bvid.trim()
+    if (!targetBvid) return
+    setLaunchLoading(true)
+    try {
+      const data = await getLaunchCurve(targetBvid)
+      setLaunchData(data ?? [])
+      if (!data || data.length === 0) {
+        message.info('未找到该视频的爬坡曲线数据')
+      }
+    } catch {
+      message.error('获取爬坡曲线数据失败')
+    } finally {
+      setLaunchLoading(false)
+    }
+  }, [bvid])
 
   const handleSearch = useCallback(async () => {
     const trimmed = bvid.trim()
@@ -107,7 +122,9 @@ const Trend: React.FC = () => {
     } finally {
       setTrendLoading(false)
     }
-  }, [bvid, trendRange])
+
+    fetchLaunchCurve(trimmed)
+  }, [bvid, trendRange, fetchLaunchCurve])
 
   const chartOption = useMemo(() => {
     if (trendData.length === 0) return null
@@ -200,6 +217,110 @@ const Trend: React.FC = () => {
       series,
     }
   }, [trendData])
+
+  const launchChartOption = useMemo(() => {
+    if (launchData.length === 0) return null
+
+    const dates = launchData.map((d) => d.snapshot_date)
+    const views = launchData.map((d) => d.view_count)
+    const baseView = launchData[0].view_count
+    const cumulativeViews = views.map((v) => v - baseView)
+
+    return {
+      backgroundColor: 'transparent',
+      tooltip: {
+        trigger: 'axis' as const,
+        backgroundColor: 'rgba(25,25,50,0.92)',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        textStyle: { color: '#e8e8f0', fontSize: 13 },
+        formatter(params: unknown[]) {
+          const items = params as { axisValue: string; value: number }[]
+          if (!items || items.length === 0) return ''
+          const date = items[0].axisValue
+          const val = items[0].value ?? 0
+          const abs = (val + baseView).toLocaleString()
+          return `<div style="font-weight:600;margin-bottom:6px;color:#FB7299">${date}</div>
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#FB7299;margin-right:6px"></span>
+            累计播放: <b style="color:#e8e8f0">${abs}</b><br/>
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#23ADE5;margin-right:6px"></span>
+            增量: <b style="color:#23ADE5">${val.toLocaleString()}</b>`
+        },
+      },
+      legend: {
+        top: 0,
+        textStyle: { fontSize: 13, color: '#9a9ab0' },
+      },
+      grid: {
+        left: 60,
+        right: 30,
+        top: 40,
+        bottom: 60,
+      },
+      xAxis: {
+        type: 'category' as const,
+        data: dates,
+        boundaryGap: false,
+        axisLabel: { fontSize: 11, color: '#5e5e78' },
+        axisLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } },
+      },
+      yAxis: {
+        type: 'value' as const,
+        axisLabel: {
+          fontSize: 11,
+          color: '#5e5e78',
+          formatter: (v: number) => formatCount(v),
+        },
+        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.04)' } },
+      },
+      dataZoom: [
+        {
+          type: 'inside' as const,
+          start: 0,
+          end: 100,
+        },
+        {
+          type: 'slider' as const,
+          start: 0,
+          end: 100,
+          height: 24,
+          bottom: 8,
+          borderColor: 'rgba(255,255,255,0.08)',
+          fillerColor: 'rgba(251,114,153,0.15)',
+          handleStyle: { color: '#FB7299' },
+          textStyle: { color: '#5e5e78' },
+        },
+      ],
+      series: [
+        {
+          name: '播放增量',
+          type: 'line' as const,
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: { width: 2.5, color: '#FB7299' },
+          itemStyle: { color: '#FB7299', borderWidth: 2 },
+          data: cumulativeViews,
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#FB729930' },
+              { offset: 1, color: '#FB729905' },
+            ]),
+          },
+        },
+      ],
+    }
+  }, [launchData])
+
+  const launchMetrics = useMemo(() => {
+    if (launchData.length < 2) return { h24: null as number | null, d3: null as number | null, d7: null as number | null }
+    const base = launchData[0].view_count
+    return {
+      h24: launchData.length >= 2 ? launchData[1].view_count - base : null,
+      d3: launchData.length >= 4 ? launchData[3].view_count - base : null,
+      d7: launchData.length >= 8 ? launchData[7].view_count - base : null,
+    }
+  }, [launchData])
 
   const rankColumns: ColumnsType<VideoStat> = useMemo(
     () => [
@@ -323,6 +444,52 @@ const Trend: React.FC = () => {
             <Empty
               description="输入BV号查询视频趋势数据"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
+          </div>
+        </div>
+      )}
+
+      {launchLoading && (
+        <div className="section-card">
+          <div className="section-body" style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
+            <Spin tip="加载爬坡曲线..." />
+          </div>
+        </div>
+      )}
+
+      {!launchLoading && launchData.length > 1 && launchChartOption && (
+        <div className="section-card">
+          <div className="section-header">
+            <div className="section-title">
+              <LineChartOutlined style={{ color: '#FB7299' }} />
+              <span>{launchData[0].title} — 爬坡曲线</span>
+            </div>
+          </div>
+          <div className="section-body">
+            <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
+              {[
+                { label: '24h增长', value: launchMetrics.h24, color: '#FB7299' },
+                { label: '3日增长', value: launchMetrics.d3, color: '#23ADE5' },
+                { label: '7日增长', value: launchMetrics.d7, color: '#FFB027' },
+              ].map((m) => (
+                <div
+                  key={m.label}
+                  className="stat-card"
+                  style={{ '--card-accent': m.color, flex: 1, minWidth: 160 } as React.CSSProperties}
+                >
+                  <div className="stat-value" style={{ fontSize: 22 }}>
+                    {m.value !== null ? formatCount(m.value) : '—'}
+                  </div>
+                  <div className="stat-label">{m.label}</div>
+                </div>
+              ))}
+            </div>
+            <ReactEChartsCore
+              echarts={echarts}
+              option={launchChartOption}
+              style={{ height: 380 }}
+              notMerge
+              lazyUpdate
             />
           </div>
         </div>

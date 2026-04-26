@@ -43,7 +43,11 @@ func newVideoCache() *videoCache {
 }
 
 func cleanCacheDir(dir string, maxAge time.Duration) {
-	entries, _ := os.ReadDir(dir)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		slog.Warn("clean cache dir: read dir failed", "dir", dir, "error", err)
+		return
+	}
 	for _, e := range entries {
 		info, err := e.Info()
 		if err != nil {
@@ -226,7 +230,10 @@ func (h *PlayerHandler) ProxyURL(c *gin.Context) {
 
 func (h *PlayerHandler) fetchCid(bvid string) (cid int64, aid int64, duration int64, err error) {
 	url := fmt.Sprintf("https://api.bilibili.com/x/web-interface/view?bvid=%s", bvid)
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("create view request: %w", err)
+	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 	req.Header.Set("Cookie", fmt.Sprintf("SESSDATA=%s", h.cfg.Bilibili.SESSDATA))
 
@@ -264,7 +271,10 @@ func (h *PlayerHandler) fetchDASHURLs(aid, cid int64, qn int) (videoURL, audioUR
 		aid, cid, qn,
 	)
 
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", "", fmt.Errorf("create playurl request: %w", err)
+	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 	req.Header.Set("Referer", "https://www.bilibili.com")
 	req.Header.Set("Cookie", fmt.Sprintf("SESSDATA=%s", h.cfg.Bilibili.SESSDATA))

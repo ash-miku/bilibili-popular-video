@@ -2,12 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, createContext, useCont
 import { Input, Empty, message, Modal } from 'antd'
 import { PlayCircleOutlined, SearchOutlined, CloseCircleFilled } from '@ant-design/icons'
 import Artplayer from 'artplayer'
-
-const formatCount = (n: number): string => {
-  if (n >= 100_000_000) return (n / 100_000_000).toFixed(1).replace(/\.0$/, '') + '亿'
-  if (n >= 10_000) return (n / 10_000).toFixed(1).replace(/\.0$/, '') + '万'
-  return n.toLocaleString()
-}
+import { formatCount } from '../utils/format'
 
 const QUALITY_OPTIONS = [
   { qn: 120, label: '4K' },
@@ -59,30 +54,39 @@ export const VideoModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
       destroyArt()
 
-      const bvid = video.bvid
-      const makeStreamUrl = (qn: number) => `/api/v1/player/stream?bvid=${bvid}&qn=${qn}`
+      try {
+        const bvid = video.bvid
+        const makeStreamUrl = (qn: number) => `/api/v1/player/stream?bvid=${bvid}&qn=${qn}`
 
-      const art = new Artplayer({
-        container: artRef.current!,
-        url: makeStreamUrl(80),
-        volume: parseFloat(localStorage.getItem('bili-volume') || '0.5'),
-        autoplay: true,
-        fullscreen: true,
-        fullscreenWeb: true,
-        miniProgressBar: true,
-        mutex: true,
-        theme: '#FB7299',
-        lang: 'zh-cn',
-        quality: QUALITY_OPTIONS.map((o) => ({
-          html: o.label,
-          url: makeStreamUrl(o.qn),
-          default: o.qn === 80,
-        })),
-      })
+        const art = new Artplayer({
+          container: artRef.current!,
+          url: makeStreamUrl(80),
+          volume: parseFloat(localStorage.getItem('bili-volume') || '0.5'),
+          autoplay: true,
+          fullscreen: true,
+          fullscreenWeb: true,
+          miniProgressBar: true,
+          mutex: true,
+          theme: '#FB7299',
+          lang: 'zh-cn',
+          quality: QUALITY_OPTIONS.map((o) => ({
+            html: o.label,
+            url: makeStreamUrl(o.qn),
+            default: o.qn === 80,
+          })),
+        })
 
-      art.on('video:canplay', () => setLoading(false))
+        art.on('video:canplay', () => setLoading(false))
+        art.on('video:error', () => {
+          setError('视频加载失败，可能需要配置 SESSDATA Cookie 或检查网络连接')
+          setLoading(false)
+        })
 
-      artInstance.current = art
+        artInstance.current = art
+      } catch {
+        setError('播放器初始化失败')
+        setLoading(false)
+      }
     }, 50)
   }, [video, destroyArt])
 
@@ -180,7 +184,7 @@ const Player: React.FC = () => {
     try {
       const saved = localStorage.getItem('bili-player-history')
       if (saved) setHistory(JSON.parse(saved))
-    } catch {}
+    } catch { console.warn('Failed to parse player history from localStorage') }
   }, [])
 
   const extractBvid = (input: string): string | null => {
@@ -200,7 +204,7 @@ const Player: React.FC = () => {
     if (!exists) {
       const next = [{ bvid: extracted, title: extracted }, ...history].slice(0, 20)
       setHistory(next)
-      try { localStorage.setItem('bili-player-history', JSON.stringify(next)) } catch {}
+      try { localStorage.setItem('bili-player-history', JSON.stringify(next)) } catch { console.warn('Failed to save player history to localStorage') }
     }
   }
 

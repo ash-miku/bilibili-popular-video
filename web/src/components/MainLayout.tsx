@@ -12,12 +12,14 @@ import {
   PlayCircleOutlined,
   SunOutlined,
   MoonOutlined,
+  SearchOutlined,
 } from '@ant-design/icons'
 import { useTheme } from '../contexts/ThemeContext'
 
 const menuItems = [
   { key: '/dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
   { key: '/hot', icon: <FireOutlined />, label: '综合热门' },
+  { key: '/search', icon: <SearchOutlined />, label: '搜索' },
   { key: '/player', icon: <PlayCircleOutlined />, label: '视频播放' },
   { key: '/trend', icon: <LineChartOutlined />, label: '趋势分析' },
   { key: '/uploader', icon: <UserOutlined />, label: 'UP主分析' },

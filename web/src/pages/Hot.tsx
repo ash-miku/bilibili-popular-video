@@ -5,14 +5,9 @@ import type { ColumnsType } from 'antd/es/table'
 import dayjs, { Dayjs } from 'dayjs'
 import { getHotRanking, getCategoryDistribution, type VideoStat } from '../api'
 import { useVideoModal } from './Player'
+import { formatCount } from '../utils/format'
 
 const { RangePicker } = DatePicker
-
-const formatCount = (n: number): string => {
-  if (n >= 100_000_000) return (n / 100_000_000).toFixed(1).replace(/\.0$/, '') + '亿'
-  if (n >= 10_000) return (n / 10_000).toFixed(1).replace(/\.0$/, '') + '万'
-  return n.toLocaleString()
-}
 
 const Hot: React.FC = () => {
   const [loading, setLoading] = useState(false)
@@ -36,7 +31,7 @@ const Hot: React.FC = () => {
           .map(([name, count]) => ({ label: `${name} (${count})`, value: name }))
         setPartitions(items)
       })
-      .catch(() => {})
+      .catch(() => { message.error('分区列表加载失败') })
   }, [])
 
   const fetchData = useCallback(async () => {

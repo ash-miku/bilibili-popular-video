@@ -13,6 +13,7 @@ import (
 	"bilibili-popular-video/internal/config"
 	"bilibili-popular-video/internal/crawler"
 	"bilibili-popular-video/internal/handler"
+	"bilibili-popular-video/internal/notify"
 	"bilibili-popular-video/internal/repository/ch"
 	"bilibili-popular-video/internal/repository/pg"
 	"bilibili-popular-video/internal/sync"
@@ -70,7 +71,8 @@ func main() {
 
 	// ---------- 7. Start crawler scheduler ----------
 	biliCrawler := crawler.NewBilibiliCrawler(videoRepo, uploaderRepo, cfg.Crawler.DelayMs)
-	scheduler := crawler.NewScheduler(biliCrawler, syncer, cfg.Crawler.IntervalHour, cfg.Crawler.DailyHour)
+	notifier := notify.NewNotifier(cfg)
+	scheduler := crawler.NewScheduler(biliCrawler, syncer, notifier, statsRepo, cfg.Crawler.IntervalHour, cfg.Crawler.DailyHour)
 
 	schedCtx, schedCancel := context.WithCancel(context.Background())
 	defer schedCancel()
@@ -82,7 +84,7 @@ func main() {
 		"delay_ms", cfg.Crawler.DelayMs,
 	)
 
-	// ---------- 7. Setup Gin router ----------
+	// ---------- 8. Setup Gin router ----------
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.Logger())
@@ -99,10 +101,27 @@ func main() {
 			return
 		}
 		slog.Info("manual sync completed")
+
+		// Send daily notification if notifier is configured.
+		if notifier != nil && statsRepo != nil {
+			go func() {
+				slog.Info("manual sync: building daily notification")
+				summary, err := notify.BuildDailySummary(context.Background(), statsRepo, today)
+				if err != nil {
+					slog.Warn("manual sync: failed to build summary", "error", err)
+					return
+				}
+				slog.Info("manual sync: sending daily notification", "channels", "feishu")
+				if err := notifier.SendDailySummary(context.Background(), summary); err != nil {
+					slog.Warn("manual sync: notification failed", "error", err)
+				}
+			}()
+		}
+
 		c.JSON(200, gin.H{"status": "ok", "date": today.Format("2006-01-02")})
 	})
 
-	// ---------- 8. Start HTTP server ----------
+	// ---------- 9. Start HTTP server ----------
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler: router,
@@ -116,7 +135,7 @@ func main() {
 		}
 	}()
 
-	// ---------- 9. Graceful shutdown ----------
+	// ---------- 10. Graceful shutdown ----------
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-quit
@@ -140,6 +159,7 @@ func registerRoutes(r *gin.Engine, statsRepo *ch.StatsRepo, cfg *config.Config) 
 	categoryHandler := handler.NewCategoryHandler(statsRepo)
 	hotHandler := handler.NewHotHandler(statsRepo)
 	playerHandler := handler.NewPlayerHandler(cfg)
+	searchHandler := handler.NewSearchHandler(statsRepo)
 
 	v1 := r.Group("/api/v1")
 	{
@@ -153,6 +173,7 @@ func registerRoutes(r *gin.Engine, statsRepo *ch.StatsRepo, cfg *config.Config) 
 		{
 			trend.GET("/video/:bvid", trendHandler.VideoTrend)
 			trend.GET("/ranking-change", trendHandler.RankingChange)
+			trend.GET("/launch-curve", trendHandler.LaunchCurve)
 		}
 
 		uploader := v1.Group("/uploader")
@@ -181,6 +202,8 @@ func registerRoutes(r *gin.Engine, statsRepo *ch.StatsRepo, cfg *config.Config) 
 			player.GET("/stream", playerHandler.StreamVideo)
 			player.GET("/proxy", playerHandler.ProxyURL)
 		}
+
+		v1.GET("/search", searchHandler.Search)
 	}
 
 	// Health check endpoint
@@ -205,22 +228,30 @@ func runMigrations(pgPool *pgxpool.Pool, chConn clickhouse.Conn) error {
 	}
 	slog.Info("postgres migration applied", "file", "migrations/postgres/001_init.sql")
 
-	// ClickHouse migrations — split by semicolons and execute each statement
-	chSQL, err := os.ReadFile("migrations/clickhouse/001_init.sql")
-	if err != nil {
-		return fmt.Errorf("read clickhouse migration: %w", err)
+	// ClickHouse migrations — apply each in order
+	chMigrations := []string{
+		"migrations/clickhouse/001_init.sql",
+		"migrations/clickhouse/002_add_tags.sql",
+		"migrations/clickhouse/003_replacing_merge_tree.sql",
+	}
+	for _, path := range chMigrations {
+		chSQL, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read clickhouse migration %s: %w", path, err)
+		}
+		chStatements := splitSQL(string(chSQL))
+		for i, stmt := range chStatements {
+			if stmt == "" {
+				continue
+			}
+			if err := chConn.Exec(ctx, stmt); err != nil {
+				return fmt.Errorf("exec %s statement %d: %w", path, i+1, err)
+			}
+		}
+		slog.Info("clickhouse migration applied", "file", path, "statements", len(chStatements))
 	}
 
-	chStatements := splitSQL(string(chSQL))
-	for i, stmt := range chStatements {
-		if stmt == "" {
-			continue
-		}
-		if err := chConn.Exec(ctx, stmt); err != nil {
-			return fmt.Errorf("exec clickhouse migration statement %d: %w", i+1, err)
-		}
-	}
-	slog.Info("clickhouse migration applied", "file", "migrations/clickhouse/001_init.sql", "statements", len(chStatements))
+	slog.Info("all migrations completed")
 
 	return nil
 }

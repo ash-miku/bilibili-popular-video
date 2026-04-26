@@ -353,6 +353,11 @@ html, body, #root {
   transform: scaleX(1.15);
 }
 
+.bili-sidebar .sidebar-search {
+  padding: 0 16px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
 /* ── Content area ────────────────────────────────────────── */
 
 .bili-content {
@@ -473,6 +478,26 @@ html, body, #root {
 }
 
 /* ── Tag cloud ───────────────────────────────────────────── */
+
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px 0;
+  justify-content: center;
+}
+
+.tag-cloud-item {
+  padding: 4px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.tag-cloud-item:hover {
+  transform: scale(1.1);
+  opacity: 0.85;
+}
 
 .tag-cloud-tag {
   display: inline-block;
