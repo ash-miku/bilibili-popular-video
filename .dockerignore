@@ -1,0 +1,9 @@
+clickhouse/
+postgresql/
+.idea/
+web/node_modules/
+web/dist/
+*.tar
+*.bin
+docs/
+go.sum

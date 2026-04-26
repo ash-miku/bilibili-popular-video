@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgresql
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${PG_PASSWORD:-changeme}
+      - POSTGRES_DB=bili_data
+      - TZ=Asia/Shanghai
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgresql/pg_data:/var/lib/postgresql
+    networks:
+      - appnet
+
+  clickhouse:
+    image: clickhouse:latest
+    container_name: clickhouse
+    restart: always
+    ports:
+      - "8123:8123"   # HTTP接口
+      - "9000:9000"   # Native接口
+    environment:
+      - CLICKHOUSE_USER=${CH_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CH_PASSWORD:-changeme}
+      - CLICKHOUSE_DB=bili_data
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./clickhouse/ch_data:/var/lib/clickhouse
+      - ./clickhouse/ch_logs:/var/log/clickhouse-server
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - appnet
+
+  app:
+    build: .
+    container_name: bili-app
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+    env_file:
+      - .env
+    ports:
+      - "8090:8080"
+    depends_on:
+      - postgres
+      - clickhouse
+    networks:
+      - appnet
+
+  web:
+    image: nginx:alpine
+    container_name: bili-web
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+    ports:
+      - "3000:80"
+    volumes:
+      - ./web/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./web/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - app
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
+
