@@ -6,6 +6,7 @@
 # Build artifacts
 /bili-server
 /server
+/bin/ffmpeg
 web/dist/
 node_modules/
 web/node_modules/

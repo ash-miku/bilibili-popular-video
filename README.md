@@ -110,6 +110,14 @@ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o bili-server ./cmd/server
 
 ### 5. 构建并启动应用
 
+在执行 Docker 构建前，请先自行准备 ffmpeg 二进制，并放到以下路径：
+
+```bash
+bin/ffmpeg
+```
+
+`bin/ffmpeg` 已加入 `.gitignore`，不会随仓库一起分发，也不会推送到 GitHub。
+
 ```bash
 DOCKER_BUILDKIT=0 docker build -t bilibili-popular-video-app .
 docker compose up -d app web
@@ -204,6 +212,7 @@ curl -X POST http://localhost:8090/api/v1/admin/sync
 
 - 播放器依赖 `SESSDATA` 才能访问部分高质量流
 - Docker 镜像构建依赖根目录下已生成的 `bili-server`
+- Docker 镜像构建同时依赖本地提供的 `bin/ffmpeg`，该文件默认不纳入版本控制
 - ClickHouse 里使用的是实际抓到的分区 ID / 分区名，不建议在前端手写固定分区映射
 
 ## 后续可继续优化的方向
