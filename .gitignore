@@ -1,0 +1,38 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+/bili-server
+/server
+web/dist/
+node_modules/
+web/node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+postgres-data/
+clickhouse-data/
+postgresql/pg_data/
+clickhouse/ch_data/
+clickhouse/ch_logs/
+clickhouse.tar
+
+# Playwright
+.playwright-mcp/
+*.png
+
+# Temp
+*.tmp
+*.log
