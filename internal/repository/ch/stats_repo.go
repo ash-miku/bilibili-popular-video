@@ -24,14 +24,14 @@ func NewStatsRepo(conn clickhouse.Conn) *StatsRepo {
 // ---------------------------------------------------------------------------
 
 func (r *StatsRepo) DeleteDailyStats(ctx context.Context, date time.Time) error {
-	if err := r.conn.Exec(ctx, `ALTER TABLE video_daily_stats DELETE WHERE snapshot_date = $1`, date); err != nil {
+	if err := r.conn.Exec(ctx, `ALTER TABLE video_daily_stats DELETE WHERE snapshot_date = $1 SETTINGS mutations_sync = 1`, date); err != nil {
 		return fmt.Errorf("delete daily stats for %s: %w", date.Format("2006-01-02"), err)
 	}
 	return nil
 }
 
 func (r *StatsRepo) DeleteUploaderStats(ctx context.Context, date time.Time) error {
-	if err := r.conn.Exec(ctx, `ALTER TABLE uploader_stats DELETE WHERE stat_date = $1`, date); err != nil {
+	if err := r.conn.Exec(ctx, `ALTER TABLE uploader_stats DELETE WHERE stat_date = $1 SETTINGS mutations_sync = 1`, date); err != nil {
 		return fmt.Errorf("delete uploader stats for %s: %w", date.Format("2006-01-02"), err)
 	}
 	return nil
@@ -579,7 +579,7 @@ func (r *StatsRepo) GetHotRanking(ctx context.Context, start, end time.Time, par
 	`
 
 	if partitionName != "" {
-		countQuery = "SELECT count() " + baseJoin + " WHERE v.partition_name = $3"
+		countQuery = "SELECT count(DISTINCT v.bvid) " + baseJoin + " WHERE v.partition_name = $3"
 		countArgs = []interface{}{start, end, partitionName}
 
 		dataQuery = `
@@ -590,11 +590,12 @@ func (r *StatsRepo) GetHotRanking(ctx context.Context, start, end time.Time, par
 			` + baseJoin + `
 			WHERE v.partition_name = $3
 			ORDER BY v.view_count DESC
+			LIMIT 1 BY v.bvid
 			LIMIT $4 OFFSET $5
 		`
 		dataArgs = []interface{}{start, end, partitionName, uint64(pageSize), uint64(offset)}
 	} else {
-		countQuery = "SELECT count() " + baseJoin
+		countQuery = "SELECT count(DISTINCT v.bvid) " + baseJoin
 		countArgs = []interface{}{start, end}
 
 		dataQuery = `
@@ -604,6 +605,7 @@ func (r *StatsRepo) GetHotRanking(ctx context.Context, start, end time.Time, par
 			       v.like_count, v.rank_position
 			` + baseJoin + `
 			ORDER BY v.view_count DESC
+			LIMIT 1 BY v.bvid
 			LIMIT $3 OFFSET $4
 		`
 		dataArgs = []interface{}{start, end, uint64(pageSize), uint64(offset)}
