@@ -9,6 +9,7 @@
 web/dist/
 node_modules/
 web/node_modules/
+*.tsbuildinfo
 
 # IDE
 .idea/
