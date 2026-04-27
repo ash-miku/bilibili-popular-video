@@ -22,6 +22,7 @@ import {
   FieldTimeOutlined,
   HistoryOutlined,
   CrownOutlined,
+  AimOutlined,
 } from '@ant-design/icons'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -34,8 +35,10 @@ const menuItems = [
   { key: '/uploader', icon: <UserOutlined />, label: 'UP主分析' },
   { key: '/uploader-leaderboard', icon: <CrownOutlined />, label: 'UP主排行' },
   { key: '/category', icon: <AppstoreOutlined />, label: '分类分析' },
+  { key: '/partition-rank', icon: <BarChartOutlined />, label: '分区排行' },
   { key: '/stats', icon: <BarChartOutlined />, label: '数据概览' },
   { key: '/ranking-change', icon: <SwapOutlined />, label: '排行变化' },
+  { key: '/rank-tracker', icon: <AimOutlined />, label: '排名追踪' },
   { key: '/favorites', icon: <HeartOutlined />, label: '我的收藏' },
   { key: '/compare', icon: <FundOutlined />, label: '数据对比' },
   { key: '/calendar', icon: <CalendarOutlined />, label: '数据日历' },

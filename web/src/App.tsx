@@ -24,6 +24,8 @@ const Calendar = lazy(() => import('./pages/Calendar'))
 const Duration = lazy(() => import('./pages/Duration'))
 const HistoryRanking = lazy(() => import('./pages/HistoryRanking'))
 const UploaderLeaderboard = lazy(() => import('./pages/UploaderLeaderboard'))
+const PartitionRank = lazy(() => import('./pages/PartitionRank'))
+const RankTracker = lazy(() => import('./pages/RankTracker'))
 import './styles/global.css'
 
 const DARK_TOKEN = {
@@ -119,6 +121,8 @@ const ThemedApp: React.FC = () => {
                   <Route path="duration" element={<Duration />} />
                   <Route path="history" element={<HistoryRanking />} />
                   <Route path="uploader-leaderboard" element={<UploaderLeaderboard />} />
+                  <Route path="partition-rank" element={<PartitionRank />} />
+                  <Route path="rank-tracker" element={<RankTracker />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>
