@@ -17,6 +17,7 @@ import RankingChange from './pages/RankingChange'
 import Favorites from './pages/Favorites'
 import Compare from './pages/Compare'
 import Calendar from './pages/Calendar'
+import Duration from './pages/Duration'
 import NotFound from './pages/NotFound'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { FavoritesProvider } from './contexts/FavoritesContext'
@@ -111,6 +112,7 @@ const ThemedApp: React.FC = () => {
                   <Route path="favorites" element={<Favorites />} />
                   <Route path="compare" element={<Compare />} />
                   <Route path="calendar" element={<Calendar />} />
+                  <Route path="duration" element={<Duration />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>
