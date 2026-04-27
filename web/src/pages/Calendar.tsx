@@ -3,12 +3,12 @@ import { Spin, Empty, message, Select } from 'antd'
 import { CalendarOutlined } from '@ant-design/icons'
 import ReactEChartsCore from 'echarts-for-react/lib/core'
 import * as echarts from 'echarts/core'
-import { CustomChart } from 'echarts/charts'
+import { HeatmapChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { getHeatmap, type HeatmapItem } from '../api'
 
-echarts.use([CustomChart, GridComponent, TooltipComponent, VisualMapComponent, CanvasRenderer])
+echarts.use([HeatmapChart, GridComponent, TooltipComponent, VisualMapComponent, CanvasRenderer])
 
 const CalendarPage: React.FC = () => {
   const getThemeColor = (varName: string) =>
@@ -30,10 +30,11 @@ const CalendarPage: React.FC = () => {
   const chartOption = {
     backgroundColor: 'transparent',
     tooltip: {
-      formatter: (params: { data: [string, number, number] }) => {
-        if (!params.data) return ''
-        const [date, count, views] = params.data
-        return `${date}<br/>视频数: ${count}<br/>播放量: ${views?.toLocaleString() ?? 0}`
+      formatter: (params: { data: [string, number]; value: [string, number] }) => {
+        const d = params.data || params.value
+        if (!d) return ''
+        const item = data.find((x) => x.date === d[0])
+        return `${d[0]}<br/>视频数: ${d[1]}<br/>播放量: ${item?.total_views?.toLocaleString() ?? 0}`
       },
       backgroundColor: getThemeColor('--bg-card-solid') || 'rgba(25,25,50,0.92)',
       borderColor: getThemeColor('--border-card') || 'rgba(255,255,255,0.1)',
@@ -79,18 +80,9 @@ const CalendarPage: React.FC = () => {
       },
     },
     series: [{
-      type: 'custom' as const,
+      type: 'heatmap' as const,
       coordinateSystem: 'calendar' as const,
-      renderItem: (_params: unknown, api: { coord: (x: unknown, y: unknown) => [number, number]; value: unknown[]; visualSize: number }) => {
-        const cellPoint = api.coord(api.value[0], 0)
-        if (!cellPoint) return { type: 'path' }
-        return {
-          type: 'rect' as const,
-          shape: { x: cellPoint[0] - 6, y: cellPoint[1] - 6, width: 12, height: 12 },
-          style: { fill: api.visualSize ? undefined : 'rgba(255,255,255,0.03)' },
-        }
-      },
-      data: data.map((d) => [d.date, d.video_count, d.total_views]),
+      data: data.map((d) => [d.date, d.video_count]),
     }],
   }
 

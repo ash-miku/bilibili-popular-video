@@ -1,28 +1,29 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { ConfigProvider, theme } from 'antd'
+import { ConfigProvider, theme, Spin } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import ErrorBoundary from './components/ErrorBoundary'
 import MainLayout from './components/MainLayout'
 import Dashboard from './pages/Dashboard'
-import Trend from './pages/Trend'
-import Uploader from './pages/Uploader'
-import Category from './pages/Category'
 import Hot from './pages/Hot'
 import Player, { VideoModalProvider } from './pages/Player'
 import Search from './pages/Search'
-import Gallery from './pages/Gallery'
-import Stats from './pages/Stats'
-import RankingChange from './pages/RankingChange'
-import Favorites from './pages/Favorites'
-import Compare from './pages/Compare'
-import Calendar from './pages/Calendar'
-import Duration from './pages/Duration'
-import HistoryRanking from './pages/HistoryRanking'
-import UploaderLeaderboard from './pages/UploaderLeaderboard'
 import NotFound from './pages/NotFound'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { FavoritesProvider } from './contexts/FavoritesContext'
+
+const Trend = lazy(() => import('./pages/Trend'))
+const Uploader = lazy(() => import('./pages/Uploader'))
+const Category = lazy(() => import('./pages/Category'))
+const Gallery = lazy(() => import('./pages/Gallery'))
+const Stats = lazy(() => import('./pages/Stats'))
+const RankingChange = lazy(() => import('./pages/RankingChange'))
+const Favorites = lazy(() => import('./pages/Favorites'))
+const Compare = lazy(() => import('./pages/Compare'))
+const Calendar = lazy(() => import('./pages/Calendar'))
+const Duration = lazy(() => import('./pages/Duration'))
+const HistoryRanking = lazy(() => import('./pages/HistoryRanking'))
+const UploaderLeaderboard = lazy(() => import('./pages/UploaderLeaderboard'))
 import './styles/global.css'
 
 const DARK_TOKEN = {
@@ -98,6 +99,7 @@ const ThemedApp: React.FC = () => {
         <FavoritesProvider>
           <VideoModalProvider>
             <ErrorBoundary>
+              <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><Spin size="large" /></div>}>
               <Routes>
                 <Route path="/" element={<MainLayout />}>
                   <Route index element={<Navigate to="/dashboard" replace />} />
@@ -120,6 +122,7 @@ const ThemedApp: React.FC = () => {
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>
+              </Suspense>
             </ErrorBoundary>
           </VideoModalProvider>
         </FavoritesProvider>
