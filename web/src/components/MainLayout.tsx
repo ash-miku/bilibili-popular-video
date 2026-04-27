@@ -30,29 +30,49 @@ import {
 } from '@ant-design/icons'
 import { useTheme } from '../contexts/ThemeContext'
 
-const menuItems = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
-  { key: '/hot', icon: <FireOutlined />, label: '综合热门' },
-  { key: '/search', icon: <SearchOutlined />, label: '搜索' },
-  { key: '/player', icon: <PlayCircleOutlined />, label: '视频播放' },
-  { key: '/trend', icon: <LineChartOutlined />, label: '趋势分析' },
-  { key: '/uploader', icon: <UserOutlined />, label: 'UP主分析' },
-  { key: '/uploader-leaderboard', icon: <CrownOutlined />, label: 'UP主排行' },
-  { key: '/category', icon: <AppstoreOutlined />, label: '分类分析' },
-  { key: '/partition-rank', icon: <BarChartOutlined />, label: '分区排行' },
-  { key: '/stats', icon: <BarChartOutlined />, label: '数据概览' },
-  { key: '/ranking-change', icon: <SwapOutlined />, label: '排行变化' },
-  { key: '/rank-tracker', icon: <AimOutlined />, label: '排名追踪' },
-  { key: '/tag-cloud', icon: <TagOutlined />, label: '标签云' },
-  { key: '/interaction', icon: <InteractionOutlined />, label: '互动分析' },
-  { key: '/newcomer', icon: <RocketOutlined />, label: '新人发现' },
-  { key: '/weekly-report', icon: <FileTextOutlined />, label: '周报汇总' },
-  { key: '/favorites', icon: <HeartOutlined />, label: '我的收藏' },
-  { key: '/compare', icon: <FundOutlined />, label: '数据对比' },
-  { key: '/calendar', icon: <CalendarOutlined />, label: '数据日历' },
-  { key: '/duration', icon: <FieldTimeOutlined />, label: '时长分析' },
-  { key: '/history', icon: <HistoryOutlined />, label: '历史榜单' },
-  { key: '/gallery', icon: <PictureOutlined />, label: '封面画廊' },
+const menuGroups = [
+  {
+    label: '浏览',
+    items: [
+      { key: '/dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
+      { key: '/hot', icon: <FireOutlined />, label: '综合热门' },
+      { key: '/search', icon: <SearchOutlined />, label: '搜索' },
+      { key: '/player', icon: <PlayCircleOutlined />, label: '视频播放' },
+      { key: '/gallery', icon: <PictureOutlined />, label: '封面画廊' },
+      { key: '/favorites', icon: <HeartOutlined />, label: '我的收藏' },
+    ],
+  },
+  {
+    label: '视频分析',
+    items: [
+      { key: '/trend', icon: <LineChartOutlined />, label: '趋势分析' },
+      { key: '/ranking-change', icon: <SwapOutlined />, label: '排行变化' },
+      { key: '/rank-tracker', icon: <AimOutlined />, label: '排名追踪' },
+      { key: '/interaction', icon: <InteractionOutlined />, label: '互动分析' },
+      { key: '/compare', icon: <FundOutlined />, label: '数据对比' },
+      { key: '/duration', icon: <FieldTimeOutlined />, label: '时长分析' },
+    ],
+  },
+  {
+    label: 'UP主与分区',
+    items: [
+      { key: '/uploader', icon: <UserOutlined />, label: 'UP主分析' },
+      { key: '/uploader-leaderboard', icon: <CrownOutlined />, label: 'UP主排行' },
+      { key: '/newcomer', icon: <RocketOutlined />, label: '新人发现' },
+      { key: '/category', icon: <AppstoreOutlined />, label: '分类分析' },
+      { key: '/partition-rank', icon: <BarChartOutlined />, label: '分区排行' },
+      { key: '/tag-cloud', icon: <TagOutlined />, label: '标签云' },
+    ],
+  },
+  {
+    label: '数据报告',
+    items: [
+      { key: '/stats', icon: <BarChartOutlined />, label: '数据概览' },
+      { key: '/calendar', icon: <CalendarOutlined />, label: '数据日历' },
+      { key: '/history', icon: <HistoryOutlined />, label: '历史榜单' },
+      { key: '/weekly-report', icon: <FileTextOutlined />, label: '周报汇总' },
+    ],
+  },
 ]
 
 const MainLayout: React.FC = () => {
@@ -90,21 +110,30 @@ const MainLayout: React.FC = () => {
           )}
         </div>
 
-        <nav className="sidebar-menu" style={{ flex: 1 }}>
-          {menuItems.map((item) => {
-            const isActive = location.pathname === item.key
-            return (
-              <button
-                key={item.key}
-                className={`menu-item${isActive ? ' active' : ''}`}
-                onClick={() => navigate(item.key)}
-                title={collapsed ? item.label : undefined}
-              >
-                <span className="menu-icon">{item.icon}</span>
-                {!collapsed && <span>{item.label}</span>}
-              </button>
-            )
-          })}
+        <nav className="sidebar-menu" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+          {menuGroups.map((group) => (
+            <div key={group.label}>
+              {!collapsed ? (
+                <div className="menu-group-label">{group.label}</div>
+              ) : (
+                <div className="menu-group-divider" />
+              )}
+              {group.items.map((item) => {
+                const isActive = location.pathname === item.key
+                return (
+                  <button
+                    key={item.key}
+                    className={`menu-item${isActive ? ' active' : ''}`}
+                    onClick={() => navigate(item.key)}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <span className="menu-icon">{item.icon}</span>
+                    {!collapsed && <span>{item.label}</span>}
+                  </button>
+                )
+              })}
+            </div>
+          ))}
         </nav>
 
         <div className="sidebar-footer">
