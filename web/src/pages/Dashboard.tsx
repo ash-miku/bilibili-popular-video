@@ -8,6 +8,8 @@ import {
   SearchOutlined,
   SyncOutlined,
   CloudSyncOutlined,
+  HeartOutlined,
+  HeartFilled,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import ReactEChartsCore from 'echarts-for-react/lib/core'
@@ -25,6 +27,7 @@ import {
   type VideoStat,
 } from '../api'
 import { useVideoModal } from './Player'
+import { useFavorites } from '../contexts/FavoritesContext'
 import { formatCount } from '../utils/format'
 
 echarts.use([PieChart, TitleComponent, TooltipComponent, LegendComponent, CanvasRenderer])
@@ -74,7 +77,11 @@ function AnimatedNumber({ value, format }: { value: number; format?: (v: number)
   return <>{format ? format(displayed) : displayed.toLocaleString()}</>
 }
 
-function makeRankingColumns(onTitleClick: (record: VideoStat) => void): ColumnsType<VideoStat> {
+function makeRankingColumns(
+  onTitleClick: (record: VideoStat) => void,
+  isFav: (bvid: string) => boolean,
+  toggleFav: (record: VideoStat) => void,
+): ColumnsType<VideoStat> {
   return [
     {
       title: '排名',
@@ -156,6 +163,26 @@ function makeRankingColumns(onTitleClick: (record: VideoStat) => void): ColumnsT
       sorter: (a, b) => a.danmaku_count - b.danmaku_count,
       render: (n: number) => <span style={{ color: '#FFB027' }}>{formatCount(n)}</span>,
     },
+    {
+      title: '',
+      key: 'fav',
+      width: 40,
+      align: 'center',
+      render: (_: unknown, record: VideoStat) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); toggleFav(record) }}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: isFav(record.bvid) ? '#FF6B6B' : 'var(--text-muted)',
+            fontSize: 15, transition: 'color 0.2s, transform 0.2s', padding: 0,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+        >
+          {isFav(record.bvid) ? <HeartFilled /> : <HeartOutlined />}
+        </button>
+      ),
+    },
   ]
 }
 
@@ -171,6 +198,20 @@ const Dashboard: React.FC = () => {
   const [searchText, setSearchText] = useState('')
   const [filterPartition, setFilterPartition] = useState<string>('')
   const videoModal = useVideoModal()
+  const { addFavorite, removeFavorite, isFavorite } = useFavorites()
+
+  const toggleFav = useCallback((v: VideoStat) => {
+    if (isFavorite(v.bvid)) {
+      removeFavorite(v.bvid)
+    } else {
+      addFavorite({
+        bvid: v.bvid, title: v.title, uploader_name: v.uploader_name,
+        view_count: v.view_count, like_count: v.like_count,
+        partition_name: v.partition_name,
+        cover_url: '', duration: 0, addedAt: new Date().toISOString(),
+      })
+    }
+  }, [isFavorite, addFavorite, removeFavorite])
 
   const partitionOptions = useMemo(
     () => [...new Set(ranking.map((r) => r.partition_name).filter(Boolean))].map((n) => ({ label: n, value: n })),
@@ -406,12 +447,16 @@ const Dashboard: React.FC = () => {
             </div>
             <Table<VideoStat>
               dataSource={filteredRanking}
-              columns={makeRankingColumns((v) => videoModal.open({
+              columns={makeRankingColumns(
+              (v) => videoModal.open({
                 bvid: v.bvid,
                 title: v.title,
                 uploaderName: v.uploader_name,
                 viewCount: v.view_count,
-              }))}
+              }),
+              isFavorite,
+              toggleFav,
+            )}
               rowKey="bvid"
               pagination={false}
               size="middle"
