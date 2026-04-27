@@ -119,6 +119,20 @@ func (r *StatsRepo) InsertUploaderStats(ctx context.Context, stats []model.Uploa
 	return nil
 }
 
+// HasDailyStats returns true if any daily stats rows exist for the given date.
+// This is used as a persistent guard to prevent duplicate daily notifications
+// after container restarts within the same day.
+func (r *StatsRepo) HasDailyStats(ctx context.Context, date time.Time) (bool, error) {
+	rows, err := r.conn.Query(ctx,
+		`SELECT 1 FROM `+statsDailyTable+` WHERE snapshot_date = $1 LIMIT 1`,
+		date)
+	if err != nil {
+		return false, fmt.Errorf("check daily stats for %s: %w", date.Format("2006-01-02"), err)
+	}
+	defer rows.Close()
+	return rows.Next(), nil
+}
+
 // ---------------------------------------------------------------------------
 // Dashboard queries
 // ---------------------------------------------------------------------------
