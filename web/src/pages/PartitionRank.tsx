@@ -3,15 +3,15 @@ import { Select, Spin, Empty, message } from 'antd'
 import { AppstoreOutlined } from '@ant-design/icons'
 import ReactEChartsCore from 'echarts-for-react/lib/core'
 import * as echarts from 'echarts/core'
-import { BarChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent } from 'echarts/components'
+import { BarChart, LineChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import dayjs from 'dayjs'
 import { getPartitionList, getCategoryDistribution, getCategoryTrend } from '../api'
 import { formatCount } from '../utils/format'
 import { presets, presetToRange, type PresetKey } from '../utils/datePresets'
 
-echarts.use([BarChart, GridComponent, TooltipComponent, CanvasRenderer])
+echarts.use([BarChart, LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
 const PartitionRank: React.FC = () => {
   const getThemeColor = (varName: string) =>

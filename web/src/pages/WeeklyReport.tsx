@@ -154,6 +154,8 @@ const WeeklyReport: React.FC = () => {
   const tagsBarOption = useMemo(() => {
     const entries = Object.entries(topTags).sort((a, b) => b[1] - a[1])
     if (entries.length === 0) return null
+    const reversed = [...entries].reverse()
+    const names = reversed.map(([n]) => n)
     return {
       backgroundColor: 'transparent',
       tooltip: { trigger: 'axis' as const },
@@ -165,12 +167,12 @@ const WeeklyReport: React.FC = () => {
       },
       yAxis: {
         type: 'category' as const,
-        data: entries.reverse().map(([n]) => n),
+        data: names,
         axisLabel: { color: '#9a9ab0', fontSize: 12 },
       },
       series: [{
         type: 'bar' as const,
-        data: entries.reverse().map(([_, v]) => ({
+        data: reversed.map(([_, v]) => ({
           value: v,
           itemStyle: {
             borderRadius: [0, 4, 4, 0],
@@ -187,6 +189,8 @@ const WeeklyReport: React.FC = () => {
 
   const uploadersBarOption = useMemo(() => {
     if (topUploaders.length === 0) return null
+    const reversed = [...topUploaders].reverse()
+    const names = reversed.map((u) => u.uploader_name)
     return {
       backgroundColor: 'transparent',
       tooltip: {
@@ -209,12 +213,12 @@ const WeeklyReport: React.FC = () => {
       },
       yAxis: {
         type: 'category' as const,
-        data: topUploaders.reverse().map((u) => u.uploader_name),
+        data: names,
         axisLabel: { color: '#9a9ab0', fontSize: 12 },
       },
       series: [{
         type: 'bar' as const,
-        data: topUploaders.reverse().map((u) => ({
+        data: reversed.map((u) => ({
           value: u.total_views,
           itemStyle: {
             borderRadius: [0, 4, 4, 0],

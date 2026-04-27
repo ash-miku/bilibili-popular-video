@@ -100,7 +100,8 @@ const NewcomerDiscovery: React.FC = () => {
 
   const barOption = useMemo(() => {
     if (risingStars.length === 0) return null
-    const names = risingStars.map((u) => u.uploader_name)
+    const reversed = [...risingStars].reverse()
+    const names = reversed.map((u) => u.uploader_name)
     return {
       backgroundColor: 'transparent',
       tooltip: {
@@ -123,12 +124,12 @@ const NewcomerDiscovery: React.FC = () => {
       },
       yAxis: {
         type: 'category' as const,
-        data: names.reverse(),
+        data: names,
         axisLabel: { color: '#9a9ab0', fontSize: 12 },
       },
       series: [{
         type: 'bar' as const,
-        data: risingStars.reverse().map((u) => ({
+        data: reversed.map((u) => ({
           value: u.avg_views,
           itemStyle: {
             borderRadius: [0, 4, 4, 0],

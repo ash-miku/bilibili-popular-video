@@ -14,6 +14,8 @@ echarts.use([BarChart, PieChart, RadarChart, GridComponent, TooltipComponent, Le
 
 const { RangePicker } = DatePicker
 
+const CHART_COLORS = ['#FB7299', '#23ADE5', '#FFB027']
+
 interface VideoWithRate {
   bvid: string
   title: string
@@ -89,7 +91,8 @@ const InteractionAnalysis: React.FC = () => {
 
   const engagementBarOption = useMemo(() => {
     if (top10.length === 0) return null
-    const names = top10.map((v) => v.title.length > 12 ? v.title.slice(0, 12) + '...' : v.title).reverse()
+    const reversed = [...top10].reverse()
+    const names = reversed.map((v) => v.title.length > 12 ? v.title.slice(0, 12) + '...' : v.title)
     return {
       backgroundColor: 'transparent',
       tooltip: {
@@ -118,25 +121,25 @@ const InteractionAnalysis: React.FC = () => {
       series: [
         {
           name: '点赞率', type: 'bar' as const, stack: 'rate',
-          data: top10.reverse().map((v) => +v.like_rate.toFixed(2)),
+          data: reversed.map((v) => +v.like_rate.toFixed(2)),
           itemStyle: { color: '#FB7299', borderRadius: [0, 0, 0, 0] },
           barMaxWidth: 18,
         },
         {
           name: '投币率', type: 'bar' as const, stack: 'rate',
-          data: top10.map((v) => +v.coin_rate.toFixed(2)),
+          data: reversed.map((v) => +v.coin_rate.toFixed(2)),
           itemStyle: { color: '#FFB027' },
           barMaxWidth: 18,
         },
         {
           name: '收藏率', type: 'bar' as const, stack: 'rate',
-          data: top10.map((v) => +v.favorite_rate.toFixed(2)),
+          data: reversed.map((v) => +v.favorite_rate.toFixed(2)),
           itemStyle: { color: '#23ADE5' },
           barMaxWidth: 18,
         },
         {
           name: '分享率', type: 'bar' as const, stack: 'rate',
-          data: top10.map((v) => +v.share_rate.toFixed(2)),
+          data: reversed.map((v) => +v.share_rate.toFixed(2)),
           itemStyle: { color: '#02B340', borderRadius: [0, 4, 4, 0] },
           barMaxWidth: 18,
         },
@@ -188,9 +191,9 @@ const InteractionAnalysis: React.FC = () => {
         data: top3.map((v, i) => ({
           name: v.title.length > 10 ? v.title.slice(0, 10) + '...' : v.title,
           value: [v.like_rate, v.coin_rate, v.favorite_rate, v.share_rate, v.danmaku_rate, v.reply_rate],
-          lineStyle: { color: COLORS[i], width: 2 },
-          itemStyle: { color: COLORS[i] },
-          areaStyle: { color: `${COLORS[i]}20` },
+          lineStyle: { color: CHART_COLORS[i], width: 2 },
+          itemStyle: { color: CHART_COLORS[i] },
+          areaStyle: { color: `${CHART_COLORS[i]}20` },
         })),
       }],
     }
@@ -239,8 +242,6 @@ const InteractionAnalysis: React.FC = () => {
       }],
     }
   }, [videos])
-
-  const COLORS = ['#FB7299', '#23ADE5', '#FFB027']
 
   const avgEngagement = videos.length > 0
     ? (videos.reduce((s, v) => s + v.engagement_score, 0) / videos.length).toFixed(1)
