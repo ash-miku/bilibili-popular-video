@@ -90,7 +90,7 @@ func main() {
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
-	registerRoutes(router, statsRepo, cfg)
+	registerRoutes(router, statsRepo, videoRepo, cfg)
 
 	router.POST("/api/v1/admin/sync", func(c *gin.Context) {
 		today := time.Now().Truncate(24 * time.Hour)
@@ -152,7 +152,7 @@ func main() {
 }
 
 // registerRoutes wires all API v1 handlers to the Gin engine.
-func registerRoutes(r *gin.Engine, statsRepo *ch.StatsRepo, cfg *config.Config) {
+func registerRoutes(r *gin.Engine, statsRepo *ch.StatsRepo, videoRepo *pg.VideoRepo, cfg *config.Config) {
 	dashboardHandler := handler.NewDashboardHandler(statsRepo)
 	trendHandler := handler.NewTrendHandler(statsRepo)
 	uploaderHandler := handler.NewUploaderHandler(statsRepo)
@@ -160,6 +160,7 @@ func registerRoutes(r *gin.Engine, statsRepo *ch.StatsRepo, cfg *config.Config) 
 	hotHandler := handler.NewHotHandler(statsRepo)
 	playerHandler := handler.NewPlayerHandler(cfg)
 	searchHandler := handler.NewSearchHandler(statsRepo)
+	galleryHandler := handler.NewGalleryHandler(statsRepo, videoRepo)
 
 	v1 := r.Group("/api/v1")
 	{
@@ -204,6 +205,11 @@ func registerRoutes(r *gin.Engine, statsRepo *ch.StatsRepo, cfg *config.Config) 
 		}
 
 		v1.GET("/search", searchHandler.Search)
+
+		gallery := v1.Group("/gallery")
+		{
+			gallery.GET("/list", galleryHandler.List)
+		}
 	}
 
 	// Health check endpoint
@@ -232,7 +238,6 @@ func runMigrations(pgPool *pgxpool.Pool, chConn clickhouse.Conn) error {
 	chMigrations := []string{
 		"migrations/clickhouse/001_init.sql",
 		"migrations/clickhouse/002_add_tags.sql",
-		"migrations/clickhouse/003_replacing_merge_tree.sql",
 	}
 	for _, path := range chMigrations {
 		chSQL, err := os.ReadFile(path)

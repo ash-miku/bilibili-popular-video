@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS video_daily_stats (
     share_count     Int32,
     like_count      Int32,
     rank_position   Nullable(Int32)
-) ENGINE = MergeTree()
+) ENGINE = ReplacingMergeTree()
 PARTITION BY toYYYYMM(snapshot_date)
 ORDER BY (snapshot_date, bvid);
 
@@ -29,6 +29,6 @@ CREATE TABLE IF NOT EXISTS uploader_stats (
     total_views     Int64,
     total_likes     Int64,
     avg_views       Float64
-) ENGINE = MergeTree()
+) ENGINE = ReplacingMergeTree()
 PARTITION BY toYYYYMM(stat_date)
 ORDER BY (stat_date, uploader_mid);

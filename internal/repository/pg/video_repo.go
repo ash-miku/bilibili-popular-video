@@ -57,6 +57,12 @@ const (
 	getAllBvidsSQL = `
 		SELECT bvid FROM videos
 	`
+
+	getVideosByBvidsSQL = `
+		SELECT bvid, cover_url, duration
+		FROM videos
+		WHERE bvid = ANY($1)
+	`
 )
 
 type VideoRepo struct {
@@ -138,6 +144,40 @@ func (r *VideoRepo) GetSnapshotsByBvid(ctx context.Context, bvid string, start, 
 		return nil, fmt.Errorf("iterate snapshots bvid=%s: %w", bvid, err)
 	}
 	return snapshots, nil
+}
+
+// VideoInfo holds the lightweight video fields needed for gallery and other
+// display-oriented queries.
+type VideoInfo struct {
+	Bvid     string
+	CoverUrl string
+	Duration int
+}
+
+// GetVideosByBvids batch-fetches cover_url and duration for a list of bvids.
+// Returns a map keyed by bvid for O(1) lookup. Missing bvids are silently omitted.
+func (r *VideoRepo) GetVideosByBvids(ctx context.Context, bvids []string) (map[string]VideoInfo, error) {
+	if len(bvids) == 0 {
+		return map[string]VideoInfo{}, nil
+	}
+	rows, err := r.pool.Query(ctx, getVideosByBvidsSQL, bvids)
+	if err != nil {
+		return nil, fmt.Errorf("batch query videos: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[string]VideoInfo, len(bvids))
+	for rows.Next() {
+		var info VideoInfo
+		if err := rows.Scan(&info.Bvid, &info.CoverUrl, &info.Duration); err != nil {
+			return nil, fmt.Errorf("scan video info: %w", err)
+		}
+		result[info.Bvid] = info
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate video info rows: %w", err)
+	}
+	return result, nil
 }
 
 func (r *VideoRepo) GetAllBvids(ctx context.Context) ([]string, error) {

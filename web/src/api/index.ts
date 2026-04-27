@@ -121,3 +121,11 @@ export const searchVideos = (q: string, page?: number, pageSize?: number) =>
 
 export const searchUploaders = (q: string, page?: number, pageSize?: number) =>
   request<PaginatedData<UploaderStat>>('/search', { q, type: 'uploader', ...(page ? { page } : {}), ...(pageSize ? { pageSize } : {}) })
+
+export interface GalleryVideo extends VideoStat {
+  cover_url: string
+  duration: number
+}
+
+export const getGalleryList = (params?: { start?: string; end?: string; partitionName?: string; page?: number; pageSize?: number }) =>
+  request<PaginatedData<GalleryVideo>>('/gallery/list', params as Record<string, string | number>)

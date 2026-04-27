@@ -11,6 +11,7 @@ import Category from './pages/Category'
 import Hot from './pages/Hot'
 import Player, { VideoModalProvider } from './pages/Player'
 import Search from './pages/Search'
+import Gallery from './pages/Gallery'
 import NotFound from './pages/NotFound'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import './styles/global.css'
@@ -97,6 +98,7 @@ const ThemedApp: React.FC = () => {
                 <Route path="category" element={<Category />} />
                 <Route path="player" element={<Player />} />
                 <Route path="search" element={<Search />} />
+                <Route path="gallery" element={<Gallery />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>

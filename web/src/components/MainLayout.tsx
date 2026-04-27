@@ -13,6 +13,7 @@ import {
   SunOutlined,
   MoonOutlined,
   SearchOutlined,
+  PictureOutlined,
 } from '@ant-design/icons'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -24,6 +25,7 @@ const menuItems = [
   { key: '/trend', icon: <LineChartOutlined />, label: '趋势分析' },
   { key: '/uploader', icon: <UserOutlined />, label: 'UP主分析' },
   { key: '/category', icon: <AppstoreOutlined />, label: '分类分析' },
+  { key: '/gallery', icon: <PictureOutlined />, label: '封面画廊' },
 ]
 
 const MainLayout: React.FC = () => {
