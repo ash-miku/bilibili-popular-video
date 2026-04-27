@@ -93,9 +93,20 @@ func main() {
 	registerRoutes(router, statsRepo, videoRepo, cfg)
 
 	router.POST("/api/v1/admin/sync", func(c *gin.Context) {
-		today := time.Now().Truncate(24 * time.Hour)
-		slog.Info("manual sync triggered", "date", today.Format("2006-01-02"))
-		if err := syncer.SyncDaily(c.Request.Context(), today); err != nil {
+		dateStr := c.DefaultQuery("date", "")
+		var syncDate time.Time
+		if dateStr != "" {
+			var err error
+			syncDate, err = time.Parse("2006-01-02", dateStr)
+			if err != nil {
+				c.JSON(400, gin.H{"error": "invalid date format, use YYYY-MM-DD"})
+				return
+			}
+		} else {
+			syncDate = time.Now().Truncate(24 * time.Hour)
+		}
+		slog.Info("manual sync triggered", "date", syncDate.Format("2006-01-02"))
+		if err := syncer.SyncDaily(c.Request.Context(), syncDate); err != nil {
 			slog.Error("manual sync failed", "error", err)
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
@@ -106,7 +117,7 @@ func main() {
 		if notifier != nil && statsRepo != nil {
 			go func() {
 				slog.Info("manual sync: building daily notification")
-				summary, err := notify.BuildDailySummary(context.Background(), statsRepo, today)
+				summary, err := notify.BuildDailySummary(context.Background(), statsRepo, syncDate)
 				if err != nil {
 					slog.Warn("manual sync: failed to build summary", "error", err)
 					return
@@ -118,7 +129,7 @@ func main() {
 			}()
 		}
 
-		c.JSON(200, gin.H{"status": "ok", "date": today.Format("2006-01-02")})
+		c.JSON(200, gin.H{"status": "ok", "date": syncDate.Format("2006-01-02")})
 	})
 
 	// ---------- 9. Start HTTP server ----------
