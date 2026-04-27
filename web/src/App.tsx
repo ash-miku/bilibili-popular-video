@@ -26,6 +26,10 @@ const HistoryRanking = lazy(() => import('./pages/HistoryRanking'))
 const UploaderLeaderboard = lazy(() => import('./pages/UploaderLeaderboard'))
 const PartitionRank = lazy(() => import('./pages/PartitionRank'))
 const RankTracker = lazy(() => import('./pages/RankTracker'))
+const TagCloud = lazy(() => import('./pages/TagCloud'))
+const InteractionAnalysis = lazy(() => import('./pages/InteractionAnalysis'))
+const NewcomerDiscovery = lazy(() => import('./pages/NewcomerDiscovery'))
+const WeeklyReport = lazy(() => import('./pages/WeeklyReport'))
 import './styles/global.css'
 
 const DARK_TOKEN = {
@@ -123,6 +127,10 @@ const ThemedApp: React.FC = () => {
                   <Route path="uploader-leaderboard" element={<UploaderLeaderboard />} />
                   <Route path="partition-rank" element={<PartitionRank />} />
                   <Route path="rank-tracker" element={<RankTracker />} />
+                  <Route path="tag-cloud" element={<TagCloud />} />
+                  <Route path="interaction" element={<InteractionAnalysis />} />
+                  <Route path="newcomer" element={<NewcomerDiscovery />} />
+                  <Route path="weekly-report" element={<WeeklyReport />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>

@@ -23,6 +23,10 @@ import {
   HistoryOutlined,
   CrownOutlined,
   AimOutlined,
+  TagOutlined,
+  InteractionOutlined,
+  RocketOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -39,6 +43,10 @@ const menuItems = [
   { key: '/stats', icon: <BarChartOutlined />, label: '数据概览' },
   { key: '/ranking-change', icon: <SwapOutlined />, label: '排行变化' },
   { key: '/rank-tracker', icon: <AimOutlined />, label: '排名追踪' },
+  { key: '/tag-cloud', icon: <TagOutlined />, label: '标签云' },
+  { key: '/interaction', icon: <InteractionOutlined />, label: '互动分析' },
+  { key: '/newcomer', icon: <RocketOutlined />, label: '新人发现' },
+  { key: '/weekly-report', icon: <FileTextOutlined />, label: '周报汇总' },
   { key: '/favorites', icon: <HeartOutlined />, label: '我的收藏' },
   { key: '/compare', icon: <FundOutlined />, label: '数据对比' },
   { key: '/calendar', icon: <CalendarOutlined />, label: '数据日历' },
