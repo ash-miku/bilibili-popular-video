@@ -19,6 +19,7 @@ import Compare from './pages/Compare'
 import Calendar from './pages/Calendar'
 import Duration from './pages/Duration'
 import HistoryRanking from './pages/HistoryRanking'
+import UploaderLeaderboard from './pages/UploaderLeaderboard'
 import NotFound from './pages/NotFound'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { FavoritesProvider } from './contexts/FavoritesContext'
@@ -115,6 +116,7 @@ const ThemedApp: React.FC = () => {
                   <Route path="calendar" element={<Calendar />} />
                   <Route path="duration" element={<Duration />} />
                   <Route path="history" element={<HistoryRanking />} />
+                  <Route path="uploader-leaderboard" element={<UploaderLeaderboard />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>

@@ -21,6 +21,7 @@ import {
   CalendarOutlined,
   FieldTimeOutlined,
   HistoryOutlined,
+  CrownOutlined,
 } from '@ant-design/icons'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -31,6 +32,7 @@ const menuItems = [
   { key: '/player', icon: <PlayCircleOutlined />, label: '视频播放' },
   { key: '/trend', icon: <LineChartOutlined />, label: '趋势分析' },
   { key: '/uploader', icon: <UserOutlined />, label: 'UP主分析' },
+  { key: '/uploader-leaderboard', icon: <CrownOutlined />, label: 'UP主排行' },
   { key: '/category', icon: <AppstoreOutlined />, label: '分类分析' },
   { key: '/stats', icon: <BarChartOutlined />, label: '数据概览' },
   { key: '/ranking-change', icon: <SwapOutlined />, label: '排行变化' },
