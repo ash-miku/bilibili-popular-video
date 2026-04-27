@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Table, Tabs, Empty, Spin, Input, message } from 'antd'
-import { SearchOutlined } from '@ant-design/icons'
+import { SearchOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { searchVideos, searchUploaders, type VideoStat, type UploaderStat } from '../api'
 import { useVideoModal } from './Player'
+import { useFavorites } from '../contexts/FavoritesContext'
 import { formatCount } from '../utils/format'
 
 const Search: React.FC = () => {
@@ -23,6 +24,7 @@ const Search: React.FC = () => {
   const [pageSize, setPageSize] = useState(20)
   const [activeTab, setActiveTab] = useState('video')
   const videoModal = useVideoModal()
+  const { addFavorite, removeFavorite, isFavorite } = useFavorites()
 
   useEffect(() => {
     if (!q && inputRef.current) {
@@ -119,6 +121,35 @@ const Search: React.FC = () => {
       key: 'partition',
       width: 110,
       render: (text: string) => <span className="partition-tag">{text}</span>,
+    },
+    {
+      title: '',
+      key: 'fav',
+      width: 40,
+      align: 'center',
+      render: (_: unknown, record: VideoStat) => (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            if (isFavorite(record.bvid)) removeFavorite(record.bvid)
+            else addFavorite({
+              bvid: record.bvid, title: record.title,
+              uploader_name: record.uploader_name, view_count: record.view_count,
+              like_count: record.like_count, partition_name: record.partition_name,
+              cover_url: '', duration: 0, addedAt: new Date().toISOString(),
+            })
+          }}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: isFavorite(record.bvid) ? '#FF6B6B' : 'var(--text-muted)',
+            fontSize: 15, transition: 'color 0.2s, transform 0.2s', padding: 0,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+        >
+          {isFavorite(record.bvid) ? <HeartFilled /> : <HeartOutlined />}
+        </button>
+      ),
     },
   ]
 
