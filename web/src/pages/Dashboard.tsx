@@ -166,18 +166,29 @@ function makeRankingColumns(
     {
       title: '',
       key: 'fav',
-      width: 40,
+      width: 48,
       align: 'center',
       render: (_: unknown, record: VideoStat) => (
         <button
           onClick={(e) => { e.stopPropagation(); toggleFav(record) }}
+          className="table-fav-btn"
           style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: isFav(record.bvid) ? '#FF6B6B' : 'var(--text-muted)',
-            fontSize: 15, transition: 'color 0.2s, transform 0.2s', padding: 0,
+            background: isFav(record.bvid) ? 'rgba(251, 114, 153, 0.2)' : 'transparent',
+            border: 'none', cursor: 'pointer',
+            color: isFav(record.bvid) ? '#FB7299' : 'var(--text-muted)',
+            fontSize: 20, transition: 'color 0.2s, transform 0.2s, background 0.2s',
+            padding: '4px 8px', borderRadius: 6,
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.2)'
+            e.currentTarget.style.color = '#FB7299'
+            e.currentTarget.style.background = 'rgba(251, 114, 153, 0.18)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)'
+            e.currentTarget.style.color = isFav(record.bvid) ? '#FB7299' : 'var(--text-muted)'
+            e.currentTarget.style.background = isFav(record.bvid) ? 'rgba(251, 114, 153, 0.2)' : 'transparent'
+          }}
         >
           {isFav(record.bvid) ? <HeartFilled /> : <HeartOutlined />}
         </button>

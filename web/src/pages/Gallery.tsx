@@ -189,173 +189,6 @@ export default function Gallery() {
           font-weight: 500;
         }
 
-        /* ── Card ──────────────────────────────────────────── */
-
-        .gallery-card {
-          width: 100%;
-          margin-bottom: 0;
-          border-radius: 12px;
-          background: var(--bg-card-solid);
-          border: 1px solid var(--border-subtle);
-          overflow: hidden;
-          cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .gallery-card:hover {
-          transform: scale(1.03);
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-          border-color: rgba(251, 114, 153, 0.3);
-          z-index: 2;
-        }
-
-        /* ── Cover ─────────────────────────────────────────── */
-
-        .gallery-cover {
-          position: relative;
-          width: 100%;
-          aspect-ratio: 16 / 9;
-          background-size: cover;
-          background-position: center;
-          background-color: var(--bg-card-solid);
-          border-radius: 12px 12px 0 0;
-          overflow: hidden;
-        }
-
-        .gallery-cover-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            to top,
-            rgba(0, 0, 0, 0.7) 0%,
-            transparent 60%
-          );
-          opacity: 0;
-          transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          display: flex;
-          align-items: flex-end;
-          padding: 12px;
-        }
-
-        .gallery-card:hover .gallery-cover-overlay {
-          opacity: 1;
-        }
-
-        .gallery-cover-overlay-title {
-          color: #fff;
-          font-size: 14px;
-          font-weight: 600;
-          line-height: 1.4;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-        }
-
-        .gallery-duration-badge {
-          position: absolute;
-          bottom: 8px;
-          right: 8px;
-          background: rgba(0, 0, 0, 0.75);
-          color: #fff;
-          font-size: 12px;
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-weight: 500;
-          line-height: 1.4;
-          z-index: 1;
-        }
-
-        .gallery-fav-btn {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          background: rgba(0, 0, 0, 0.5);
-          color: #fff;
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 16px;
-          opacity: 0;
-          transition: all 0.2s;
-          z-index: 3;
-        }
-
-        .gallery-card:hover .gallery-fav-btn {
-          opacity: 1;
-        }
-
-        .gallery-fav-btn:hover {
-          background: rgba(251, 114, 153, 0.7);
-          transform: scale(1.15);
-        }
-
-        .gallery-card:hover .gallery-duration-badge {
-          opacity: 0;
-          transition: opacity 0.2s ease;
-        }
-
-        /* ── Card body ─────────────────────────────────────── */
-
-        .gallery-card-body {
-          padding: 12px;
-        }
-
-        .gallery-card-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-primary);
-          line-height: 1.45;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          margin-bottom: 8px;
-        }
-
-        .gallery-card-uploader {
-          font-size: 12px;
-          color: var(--text-secondary);
-          margin-bottom: 6px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .gallery-card-stats {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-size: 12px;
-          color: var(--text-muted);
-          margin-bottom: 8px;
-        }
-
-        .gallery-card-stat {
-          display: inline-flex;
-          align-items: center;
-          gap: 3px;
-        }
-
-        .gallery-partition-tag {
-          display: inline-block;
-          font-size: 11px;
-          line-height: 1;
-          color: #fff;
-          background: var(--bili-pink);
-          padding: 3px 8px;
-          border-radius: 4px;
-          font-weight: 500;
-        }
-
-        /* ── Skeleton ──────────────────────────────────────── */
-
         .gallery-skeleton {
           pointer-events: none;
         }
@@ -410,14 +243,10 @@ export default function Gallery() {
           }
         }
 
-        /* ── Empty ─────────────────────────────────────────── */
-
         .gallery-empty {
           padding: 80px 0;
           text-align: center;
         }
-
-        /* ── Back to top ──────────────────────────────────── */
 
         .gallery-back-top {
           position: fixed;
@@ -443,8 +272,6 @@ export default function Gallery() {
           transform: scale(1.1);
           box-shadow: 0 6px 24px rgba(251, 114, 153, 0.6);
         }
-
-        /* ── Loading indicator ────────────────────────────── */
 
         .gallery-loading-more {
           text-align: center;
@@ -483,10 +310,6 @@ export default function Gallery() {
           .gallery-back-top {
             right: 16px;
             bottom: 16px;
-          }
-
-          .gallery-fav-btn {
-            opacity: 1;
           }
         }
       `}</style>
@@ -590,7 +413,7 @@ export default function Gallery() {
             {formatDuration(video.duration)}
           </span>
           <button
-            className="gallery-fav-btn"
+             className={`gallery-fav-btn${isFavorite(video.bvid) ? ' is-favorited' : ''}`}
             onClick={(e) => {
               e.stopPropagation()
               if (isFavorite(video.bvid)) {
