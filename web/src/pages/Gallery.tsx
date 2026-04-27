@@ -484,6 +484,10 @@ export default function Gallery() {
             right: 16px;
             bottom: 16px;
           }
+
+          .gallery-fav-btn {
+            opacity: 1;
+          }
         }
       `}</style>
 
