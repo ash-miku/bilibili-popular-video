@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, DatePicker, Select, Spin, Empty, message } from 'antd'
+import { Table, Select, Spin, Empty, message } from 'antd'
 import { FireOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs, { Dayjs } from 'dayjs'
 import { getHotRanking, getCategoryDistribution, type VideoStat } from '../api'
 import { useVideoModal } from './Player'
 import { formatCount } from '../utils/format'
-
-const { RangePicker } = DatePicker
+import { presets, presetToRange, type PresetKey } from '../utils/datePresets'
 
 const Hot: React.FC = () => {
   const [loading, setLoading] = useState(false)
@@ -15,10 +14,8 @@ const Hot: React.FC = () => {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
-    dayjs().subtract(7, 'day'),
-    dayjs(),
-  ])
+  const [activePreset, setActivePreset] = useState<PresetKey>('7d')
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(presetToRange('7d'))
   const [partitionName, setPartitionName] = useState<string>('')
   const [partitions, setPartitions] = useState<{ label: string; value: string }[]>([])
   const videoModal = useVideoModal()
@@ -163,16 +160,30 @@ const Hot: React.FC = () => {
               共 <span style={{ color: '#FB7299', fontWeight: 600 }}>{total}</span> 个视频
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <RangePicker
-              value={dateRange}
-              onChange={(dates) => {
-                if (dates && dates[0] && dates[1]) {
-                  setDateRange([dates[0], dates[1]])
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            {presets.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => {
+                  setActivePreset(p.key)
+                  setDateRange(presetToRange(p.key))
                   setPage(1)
-                }
-              }}
-            />
+                }}
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: 6,
+                  border: activePreset === p.key ? 'none' : '1px solid var(--border-subtle)',
+                  background: activePreset === p.key ? 'var(--bili-pink)' : 'transparent',
+                  color: activePreset === p.key ? '#fff' : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: activePreset === p.key ? 500 : 400,
+                  transition: 'all 0.2s',
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
             <Select
               value={partitionName}
               onChange={(val) => { setPartitionName(val); setPage(1) }}

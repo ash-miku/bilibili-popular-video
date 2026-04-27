@@ -1,16 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { DatePicker, Select, Button, Empty, message } from 'antd'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { Select, Empty, message } from 'antd'
 import {
   PictureOutlined,
   EyeOutlined,
   LikeOutlined,
+  VerticalAlignTopOutlined,
 } from '@ant-design/icons'
 import dayjs, { type Dayjs } from 'dayjs'
+import { Masonry, useInfiniteLoader } from 'masonic'
 import { getGalleryList, getPartitionList, type GalleryVideo } from '../api'
 import { useVideoModal } from './Player'
 import { formatCount } from '../utils/format'
+import { presets, presetToRange, type PresetKey } from '../utils/datePresets'
 
-const { RangePicker } = DatePicker
+function proxyCoverUrl(url: string): string {
+  if (!url) return ''
+  return `/api/v1/player/proxy?url=${encodeURIComponent(url)}`
+}
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60)
@@ -35,6 +41,7 @@ const PAGE_SIZE = 20
 
 export default function Gallery() {
   const videoModal = useVideoModal()
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const [videos, setVideos] = useState<GalleryVideo[]>([])
   const [page, setPage] = useState(1)
@@ -43,10 +50,11 @@ export default function Gallery() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [partitions, setPartitions] = useState<string[]>([])
   const [partitionName, setPartitionName] = useState<string | undefined>(undefined)
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
-    dayjs().subtract(7, 'day'),
-    dayjs(),
-  ])
+  const [showBackTop, setShowBackTop] = useState(false)
+  const loadingRef = useRef(false)
+  const pageRef = useRef(1)
+  const [activePreset, setActivePreset] = useState<PresetKey>('7d')
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(presetToRange('7d'))
 
   useEffect(() => {
     getPartitionList()
@@ -60,7 +68,9 @@ export default function Gallery() {
 
   const fetchData = useCallback(
     async (pageNum: number, append: boolean) => {
+      if (loadingRef.current) return
       try {
+        loadingRef.current = true
         if (append) {
           setLoadingMore(true)
         } else {
@@ -82,6 +92,7 @@ export default function Gallery() {
         }
         setTotal(data.total)
         setPage(data.page)
+        pageRef.current = data.page
       } catch {
         message.error('加载画廊数据失败，请稍后重试')
         if (!append) {
@@ -90,35 +101,46 @@ export default function Gallery() {
       } finally {
         setLoading(false)
         setLoadingMore(false)
+        loadingRef.current = false
       }
     },
     [dateRange, partitionName],
   )
 
   useEffect(() => {
+    pageRef.current = 1
     void fetchData(1, false)
   }, [fetchData])
 
-  const handleLoadMore = useCallback(() => {
-    void fetchData(page + 1, true)
-  }, [fetchData, page])
+  const hasMore = videos.length < total
 
-  const handleDateChange = useCallback(
-    (dates: [Dayjs | null, Dayjs | null] | null) => {
-      if (dates?.[0] && dates?.[1]) {
-        setDateRange([dates[0], dates[1]])
-      }
+  const maybeLoadMore = useInfiniteLoader<GalleryVideo, (startIndex: number, stopIndex: number, items: GalleryVideo[]) => Promise<void>>(
+    async () => {
+      if (loadingRef.current || !hasMore) return
+      await fetchData(pageRef.current + 1, true)
     },
-    [],
+    {
+      isItemLoaded: (index, items) => index < items.length,
+      minimumBatchSize: PAGE_SIZE,
+      threshold: 8,
+    },
   )
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackTop(window.scrollY > 400)
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
 
   const handlePartitionChange = useCallback((value: unknown) => {
     setPartitionName(value as string | undefined)
   }, [])
-
-  const displayedCount = videos.length
-  const hasMore = displayedCount < total
-  const rangeText = `第 ${page} 页 · 已加载 ${displayedCount} / ${total} 个视频`
 
   return (
     <>
@@ -140,51 +162,35 @@ export default function Gallery() {
           border-radius: 12px;
         }
 
-        .gallery-range-text {
-          font-size: 13px;
+        .gallery-preset-btn {
+          padding: 4px 12px;
+          border-radius: 6px;
+          border: 1px solid var(--border-subtle);
+          background: transparent;
           color: var(--text-secondary);
-          margin-left: auto;
-          white-space: nowrap;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 400;
+          transition: all 0.2s;
         }
 
-        .gallery-masonry {
-          column-count: 4;
-          column-gap: 16px;
+        .gallery-preset-btn:hover {
+          border-color: var(--bili-pink);
+          color: var(--bili-pink);
         }
 
-        @media (max-width: 1200px) {
-          .gallery-masonry {
-            column-count: 3;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .gallery-masonry {
-            column-count: 2;
-          }
-
-          .gallery-filters {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .gallery-filters .ant-picker,
-          .gallery-filters .ant-select {
-            width: 100%;
-          }
-
-          .gallery-range-text {
-            margin-left: 0;
-            text-align: center;
-          }
+        .gallery-preset-btn.active {
+          border: none;
+          background: var(--bili-pink);
+          color: #fff;
+          font-weight: 500;
         }
 
         /* ── Card ──────────────────────────────────────────── */
 
         .gallery-card {
-          break-inside: avoid;
-          display: inline-block;
           width: 100%;
-          margin-bottom: 16px;
+          margin-bottom: 0;
           border-radius: 12px;
           background: var(--bg-card-solid);
           border: 1px solid var(--border-subtle);
@@ -372,22 +378,84 @@ export default function Gallery() {
           }
         }
 
-        /* ── Load more ─────────────────────────────────────── */
-
-        .gallery-load-more {
-          text-align: center;
-          padding: 24px 0;
-        }
-
         /* ── Empty ─────────────────────────────────────────── */
 
         .gallery-empty {
           padding: 80px 0;
           text-align: center;
         }
+
+        /* ── Back to top ──────────────────────────────────── */
+
+        .gallery-back-top {
+          position: fixed;
+          right: 32px;
+          bottom: 32px;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: var(--bili-pink);
+          color: #fff;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+          box-shadow: 0 4px 16px rgba(251, 114, 153, 0.4);
+          transition: all 0.3s ease;
+          z-index: 1000;
+        }
+
+        .gallery-back-top:hover {
+          transform: scale(1.1);
+          box-shadow: 0 6px 24px rgba(251, 114, 153, 0.6);
+        }
+
+        /* ── Loading indicator ────────────────────────────── */
+
+        .gallery-loading-more {
+          text-align: center;
+          padding: 24px 0;
+          color: var(--text-secondary);
+          font-size: 14px;
+        }
+
+        .gallery-loading-more::after {
+          content: '';
+          display: inline-block;
+          width: 16px;
+          height: 16px;
+          border: 2px solid var(--border-subtle);
+          border-top-color: var(--bili-pink);
+          border-radius: 50%;
+          animation: gallery-spin 0.8s linear infinite;
+          margin-left: 8px;
+          vertical-align: middle;
+        }
+
+        @keyframes gallery-spin {
+          to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+          .gallery-filters {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .gallery-filters .ant-picker,
+          .gallery-filters .ant-select {
+            width: 100%;
+          }
+
+          .gallery-back-top {
+            right: 16px;
+            bottom: 16px;
+          }
+        }
       `}</style>
 
-      <div className="gallery-container">
+      <div className="gallery-container" ref={containerRef}>
         <div className="bili-banner">
           <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <PictureOutlined style={{ color: '#FB7299' }} />
@@ -397,12 +465,18 @@ export default function Gallery() {
         </div>
 
         <div className="gallery-filters">
-          <RangePicker
-            value={dateRange}
-            onChange={handleDateChange}
-            allowClear={false}
-            disabledDate={(d) => d.isAfter(dayjs())}
-          />
+          {presets.map((p) => (
+            <button
+              key={p.key}
+              onClick={() => {
+                setActivePreset(p.key)
+                setDateRange(presetToRange(p.key))
+              }}
+              className={`gallery-preset-btn${activePreset === p.key ? ' active' : ''}`}
+            >
+              {p.label}
+            </button>
+          ))}
           <Select
             placeholder="全部分区"
             value={partitionName}
@@ -414,13 +488,14 @@ export default function Gallery() {
               value: name,
             }))}
           />
-          <span className="gallery-range-text">{rangeText}</span>
-        </div>
+      </div>
 
         {loading ? (
-          <div className="gallery-masonry">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <SkeletonCard key={i} />
+          <div style={{ display: 'flex', gap: 16 }}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} style={{ flex: 1 }}>
+                <SkeletonCard />
+              </div>
             ))}
           </div>
         ) : videos.length === 0 ? (
@@ -429,77 +504,84 @@ export default function Gallery() {
           </div>
         ) : (
           <>
-            <div className="gallery-masonry">
-              {videos.map((video) => (
-                <div
-                  key={`${video.bvid}-${video.cover_url}`}
-                  className="gallery-card"
-                  onClick={() =>
-                    videoModal.open({
-                      bvid: video.bvid,
-                      title: video.title,
-                      uploaderName: video.uploader_name,
-                      viewCount: video.view_count,
-                    })
-                  }
-                >
-                  <div
-                    className="gallery-cover"
-                    style={{
-                      backgroundImage: video.cover_url
-                        ? `url(${video.cover_url})`
-                        : undefined,
-                    }}
-                  >
-                    <span className="gallery-duration-badge">
-                      {formatDuration(video.duration)}
-                    </span>
-                    <div className="gallery-cover-overlay">
-                      <span className="gallery-cover-overlay-title">
-                        {video.title}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="gallery-card-body">
-                    <div className="gallery-card-title">
-                      {video.title}
-                    </div>
-                    <div className="gallery-card-uploader">
-                      {video.uploader_name}
-                    </div>
-                    <div className="gallery-card-stats">
-                      <span className="gallery-card-stat">
-                        <EyeOutlined />
-                        {formatCount(video.view_count)}
-                      </span>
-                      <span className="gallery-card-stat">
-                        <LikeOutlined />
-                        {formatCount(video.like_count)}
-                      </span>
-                    </div>
-                    <span className="gallery-partition-tag">
-                      {video.partition_name}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {hasMore && (
-              <div className="gallery-load-more">
-                <Button
-                  onClick={handleLoadMore}
-                  loading={loadingMore}
-                  size="large"
-                >
-                  加载更多
-                </Button>
-              </div>
+            <Masonry
+              items={videos}
+              onRender={maybeLoadMore}
+              columnGutter={16}
+              columnWidth={320}
+              itemHeightEstimate={300}
+              overscanBy={3}
+              render={GalleryCard}
+              itemKey={(data: GalleryVideo) => `${data.bvid}-${data.cover_url}`}
+            />
+            {loadingMore && (
+              <div className="gallery-loading-more">加载中</div>
             )}
           </>
         )}
       </div>
+
+      {showBackTop && (
+        <button className="gallery-back-top" onClick={scrollToTop} title="返回顶部">
+          <VerticalAlignTopOutlined />
+        </button>
+      )}
     </>
   )
+
+  function GalleryCard({ data: video }: { index: number; data: GalleryVideo; width: number }) {
+    return (
+      <div
+        className="gallery-card"
+        onClick={() =>
+          videoModal.open({
+            bvid: video.bvid,
+            title: video.title,
+            uploaderName: video.uploader_name,
+            viewCount: video.view_count,
+          })
+        }
+      >
+        <div
+          className="gallery-cover"
+          style={{
+            backgroundImage: video.cover_url
+              ? `url(${proxyCoverUrl(video.cover_url)})`
+              : undefined,
+          }}
+        >
+          <span className="gallery-duration-badge">
+            {formatDuration(video.duration)}
+          </span>
+          <div className="gallery-cover-overlay">
+            <span className="gallery-cover-overlay-title">
+              {video.title}
+            </span>
+          </div>
+        </div>
+
+        <div className="gallery-card-body">
+          <div className="gallery-card-title">
+            {video.title}
+          </div>
+          <div className="gallery-card-uploader">
+            {video.uploader_name}
+          </div>
+          <div className="gallery-card-stats">
+            <span className="gallery-card-stat">
+              <EyeOutlined />
+              {formatCount(video.view_count)}
+            </span>
+            <span className="gallery-card-stat">
+              <LikeOutlined />
+              {formatCount(video.like_count)}
+            </span>
+          </div>
+          <span className="gallery-partition-tag">
+            {video.partition_name}
+          </span>
+        </div>
+      </div>
+    )
+  }
 }

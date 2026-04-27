@@ -319,9 +319,7 @@ func (c *BilibiliCrawler) CrawlRanking(ctx context.Context) error {
 // stored video, takes a new snapshot, and updates uploader profiles.
 func (c *BilibiliCrawler) CrawlDaily(ctx context.Context) error {
 	slog.Info("crawl daily: starting full daily crawl")
-	today := time.Now().Truncate(24 * time.Hour)
 
-	// Phase 1: Refresh tags and snapshots for all known videos.
 	bvids, err := c.videoRepo.GetAllBvids(ctx)
 	if err != nil {
 		return fmt.Errorf("crawl daily: get all bvids: %w", err)
@@ -354,17 +352,6 @@ func (c *BilibiliCrawler) CrawlDaily(ctx context.Context) error {
 
 		if err := c.videoRepo.UpsertVideo(ctx, video); err != nil {
 			slog.Error("crawl daily: update tags failed", "bvid", bvid, "error", err)
-		}
-
-		// Insert a daily snapshot with current stats from ranking if available.
-		// The ranking crawl may have already inserted today's snapshot, so we
-		// rely on the ON CONFLICT DO NOTHING in InsertSnapshot.
-		snapshot := &model.VideoSnapshot{
-			Bvid:         bvid,
-			SnapshotDate: today,
-		}
-		if err := c.videoRepo.InsertSnapshot(ctx, snapshot); err != nil {
-			slog.Error("crawl daily: insert snapshot failed", "bvid", bvid, "error", err)
 		}
 
 		c.randomDelay(ctx)
