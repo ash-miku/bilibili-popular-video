@@ -124,7 +124,7 @@ func (r *StatsRepo) InsertUploaderStats(ctx context.Context, stats []model.Uploa
 // after container restarts within the same day.
 func (r *StatsRepo) HasDailyStats(ctx context.Context, date time.Time) (bool, error) {
 	rows, err := r.conn.Query(ctx,
-		`SELECT 1 FROM `+statsDailyTable+` WHERE snapshot_date = $1 LIMIT 1`,
+		`SELECT 1 FROM `+statsDailyTable+` FINAL WHERE snapshot_date = $1 LIMIT 1`,
 		date)
 	if err != nil {
 		return false, fmt.Errorf("check daily stats for %s: %w", date.Format("2006-01-02"), err)
@@ -146,7 +146,7 @@ func (r *StatsRepo) GetOverview(ctx context.Context, date time.Time) (map[string
 			countDistinct(bvid)   AS total_videos,
 			countDistinct(uploader_mid) AS total_uploaders,
 			sum(view_count)       AS total_views
-		FROM `+statsDailyTable+`
+		FROM `+statsDailyTable+` FINAL
 		WHERE snapshot_date = $1
 	`, date)
 
@@ -177,7 +177,7 @@ func (r *StatsRepo) GetRanking(ctx context.Context, date time.Time, partitionId 
 	var dataArgs []interface{}
 
 	if partitionId > 0 {
-		countQuery = `SELECT countDistinct(bvid) FROM `+statsDailyTable+` WHERE snapshot_date = $1 AND partition_id = $2`
+		countQuery = `SELECT countDistinct(bvid) FROM `+statsDailyTable+` FINAL WHERE snapshot_date = $1 AND partition_id = $2`
 		countArgs = []interface{}{date, int32(partitionId)}
 
 		dataQuery = `
@@ -198,7 +198,7 @@ func (r *StatsRepo) GetRanking(ctx context.Context, date time.Time, partitionId 
 				argMax(share_count, snapshot_date) AS share_count,
 				argMax(like_count, snapshot_date) AS like_count,
 				argMin(rank_position, snapshot_date) AS rank_position
-			FROM `+statsDailyTable+`
+			FROM `+statsDailyTable+` FINAL
 			WHERE snapshot_date = $1 AND partition_id = $2
 			GROUP BY bvid, partition_id
 			ORDER BY view_count DESC
@@ -206,7 +206,7 @@ func (r *StatsRepo) GetRanking(ctx context.Context, date time.Time, partitionId 
 		`
 		dataArgs = []interface{}{date, int32(partitionId), uint64(pageSize), uint64(offset)}
 	} else {
-		countQuery = `SELECT countDistinct(bvid) FROM `+statsDailyTable+` WHERE snapshot_date = $1`
+		countQuery = `SELECT countDistinct(bvid) FROM `+statsDailyTable+` FINAL WHERE snapshot_date = $1`
 		countArgs = []interface{}{date}
 
 		dataQuery = `
@@ -227,7 +227,7 @@ func (r *StatsRepo) GetRanking(ctx context.Context, date time.Time, partitionId 
 				argMax(share_count, snapshot_date) AS share_count,
 				argMax(like_count, snapshot_date) AS like_count,
 				argMin(rank_position, snapshot_date) AS rank_position
-			FROM video_daily_stats
+			FROM video_daily_stats FINAL
 			WHERE snapshot_date = $1
 			GROUP BY bvid
 			ORDER BY view_count DESC
@@ -277,7 +277,7 @@ func (r *StatsRepo) GetLaunchCurve(ctx context.Context, bvid string) ([]model.Vi
 		       partition_id, partition_name, tags, view_count, danmaku_count,
 		       reply_count, favorite_count, coin_count, share_count,
 		       like_count, rank_position
-		FROM `+statsDailyTable+`
+		FROM `+statsDailyTable+` FINAL
 		WHERE bvid = $1
 		ORDER BY snapshot_date ASC
 	`, bvid)
@@ -312,7 +312,7 @@ func (r *StatsRepo) GetVideoTrend(ctx context.Context, bvid string, start, end t
 		       partition_id, partition_name, tags, view_count, danmaku_count,
 		       reply_count, favorite_count, coin_count, share_count,
 		       like_count, rank_position
-		FROM `+statsDailyTable+`
+		FROM `+statsDailyTable+` FINAL
 		WHERE bvid = $1 AND snapshot_date BETWEEN $2 AND $3
 		ORDER BY snapshot_date ASC
 	`, bvid, start, end)
@@ -352,10 +352,10 @@ func (r *StatsRepo) GetRankingChange(ctx context.Context, start, end time.Time, 
 			latest.view_count, latest.danmaku_count, latest.reply_count,
 			latest.favorite_count, latest.coin_count, latest.share_count,
 			latest.like_count, latest.rank_position
-		FROM `+statsDailyTable+` AS latest
+		FROM `+statsDailyTable+` FINAL AS latest
 		INNER JOIN (
 			SELECT bvid, view_count AS first_views
-			FROM `+statsDailyTable+`
+			FROM `+statsDailyTable+` FINAL
 			WHERE snapshot_date = $1
 		) AS first ON latest.bvid = first.bvid
 		WHERE latest.snapshot_date = $2
@@ -405,7 +405,7 @@ func (r *StatsRepo) GetTopUploaders(ctx context.Context, date time.Time, sortBy 
 
 	var total uint64
 	if err := r.conn.QueryRow(ctx, `
-		SELECT countDistinct(uploader_mid) FROM `+statsUploaderTable+` WHERE stat_date = $1
+		SELECT countDistinct(uploader_mid) FROM `+statsUploaderTable+` FINAL WHERE stat_date = $1
 	`, date).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count uploaders for %s: %w", date.Format("2006-01-02"), err)
 	}
@@ -421,7 +421,7 @@ func (r *StatsRepo) GetTopUploaders(ctx context.Context, date time.Time, sortBy 
 			sum(total_views) AS total_views,
 			sum(total_likes) AS total_likes,
 			avg(avg_views) AS avg_views
-		FROM `+statsUploaderTable+`
+		FROM `+statsUploaderTable+` FINAL
 		WHERE stat_date = $1
 		GROUP BY uploader_mid
 		ORDER BY %s
@@ -462,7 +462,7 @@ func (r *StatsRepo) GetUploaderDetail(ctx context.Context, mid int64, start, end
 			sum(total_views) AS total_views,
 			sum(total_likes) AS total_likes,
 			avg(avg_views) AS avg_views
-		FROM `+statsUploaderTable+`
+		FROM `+statsUploaderTable+` FINAL
 		WHERE uploader_mid = $1 AND stat_date BETWEEN $2 AND $3
 		GROUP BY stat_date, uploader_mid
 		ORDER BY stat_date ASC
@@ -494,8 +494,8 @@ func (r *StatsRepo) GetUploaderDetail(ctx context.Context, mid int64, start, end
 // given date.
 func (r *StatsRepo) GetCategoryDistribution(ctx context.Context, date time.Time) (map[string]int, error) {
 	rows, err := r.conn.Query(ctx, `
-		SELECT partition_name, count() AS cnt
-			FROM `+statsDailyTable+`
+		SELECT partition_name, countDistinct(bvid) AS cnt
+			FROM `+statsDailyTable+` FINAL
 			WHERE snapshot_date = $1
 		GROUP BY partition_name
 		ORDER BY cnt DESC
@@ -530,16 +530,16 @@ func (r *StatsRepo) GetCategoryTrend(ctx context.Context, partitionId int, start
 
 	if partitionId == 0 {
 		rows, err = r.conn.Query(ctx, `
-			SELECT snapshot_date, count() AS video_count, sum(view_count) AS total_views
-			FROM `+statsDailyTable+`
+			SELECT snapshot_date, countDistinct(bvid) AS video_count, sum(view_count) AS total_views
+			FROM `+statsDailyTable+` FINAL
 			WHERE snapshot_date BETWEEN $1 AND $2
 			GROUP BY snapshot_date
 			ORDER BY snapshot_date ASC
 		`, start, end)
 	} else {
 		rows, err = r.conn.Query(ctx, `
-			SELECT snapshot_date, count() AS video_count, sum(view_count) AS total_views
-			FROM `+statsDailyTable+`
+			SELECT snapshot_date, countDistinct(bvid) AS video_count, sum(view_count) AS total_views
+			FROM `+statsDailyTable+` FINAL
 			WHERE partition_id = $1 AND snapshot_date BETWEEN $2 AND $3
 			GROUP BY snapshot_date
 			ORDER BY snapshot_date ASC
@@ -579,7 +579,7 @@ type PartitionItem struct {
 func (r *StatsRepo) GetPartitionList(ctx context.Context) ([]PartitionItem, error) {
 	rows, err := r.conn.Query(ctx, `
 		SELECT DISTINCT partition_id, partition_name
-		FROM `+statsDailyTable+`
+		FROM `+statsDailyTable+` FINAL
 		ORDER BY partition_id ASC
 	`)
 	if err != nil {
@@ -609,7 +609,7 @@ func (r *StatsRepo) GetHotTags(ctx context.Context, date time.Time, limit int) (
 		SELECT tag, count() AS cnt
 		FROM (
 			SELECT arrayJoin(tags) AS tag
-			FROM `+statsDailyTable+`
+			FROM `+statsDailyTable+` FINAL
 			WHERE snapshot_date = $1
 		)
 		GROUP BY tag
@@ -646,10 +646,10 @@ func (r *StatsRepo) GetHotRanking(ctx context.Context, start, end time.Time, par
 	var dataArgs []interface{}
 
 	baseJoin := `
-		FROM `+statsDailyTable+` v
+		FROM `+statsDailyTable+` FINAL AS v
 		INNER JOIN (
 			SELECT bvid, max(snapshot_date) AS max_date
-			FROM `+statsDailyTable+`
+			FROM `+statsDailyTable+` FINAL
 			WHERE snapshot_date BETWEEN $1 AND $2
 			GROUP BY bvid
 		) latest ON v.bvid = latest.bvid AND v.snapshot_date = latest.max_date
@@ -732,10 +732,10 @@ func (r *StatsRepo) SearchVideos(ctx context.Context, query string, page, pageSi
 	offset := (page - 1) * pageSize
 
 	baseJoin := `
-		FROM `+statsDailyTable+` v
+		FROM `+statsDailyTable+` FINAL AS v
 		INNER JOIN (
 			SELECT bvid, max(snapshot_date) AS max_date
-			FROM `+statsDailyTable+`
+			FROM `+statsDailyTable+` FINAL
 			GROUP BY bvid
 		) latest ON v.bvid = latest.bvid AND v.snapshot_date = latest.max_date
 	`
@@ -793,10 +793,10 @@ func (r *StatsRepo) SearchUploaders(ctx context.Context, query string, page, pag
 	offset := (page - 1) * pageSize
 
 	baseJoin := `
-		FROM `+statsUploaderTable+` u
+		FROM `+statsUploaderTable+` FINAL AS u
 		INNER JOIN (
 			SELECT uploader_mid, max(stat_date) AS max_date
-			FROM `+statsUploaderTable+`
+			FROM `+statsUploaderTable+` FINAL
 			GROUP BY uploader_mid
 		) latest ON u.uploader_mid = latest.uploader_mid AND u.stat_date = latest.max_date
 	`

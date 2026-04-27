@@ -12,8 +12,13 @@ import Hot from './pages/Hot'
 import Player, { VideoModalProvider } from './pages/Player'
 import Search from './pages/Search'
 import Gallery from './pages/Gallery'
+import Stats from './pages/Stats'
+import RankingChange from './pages/RankingChange'
+import Favorites from './pages/Favorites'
+import Compare from './pages/Compare'
 import NotFound from './pages/NotFound'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
+import { FavoritesProvider } from './contexts/FavoritesContext'
 import './styles/global.css'
 
 const DARK_TOKEN = {
@@ -86,24 +91,30 @@ const ThemedApp: React.FC = () => {
       }}
     >
       <BrowserRouter>
-        <VideoModalProvider>
-          <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={<MainLayout />}>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="hot" element={<Hot />} />
-                <Route path="trend" element={<Trend />} />
-                <Route path="uploader" element={<Uploader />} />
-                <Route path="category" element={<Category />} />
-                <Route path="player" element={<Player />} />
-                <Route path="search" element={<Search />} />
-                <Route path="gallery" element={<Gallery />} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
-          </ErrorBoundary>
-        </VideoModalProvider>
+        <FavoritesProvider>
+          <VideoModalProvider>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/" element={<MainLayout />}>
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="hot" element={<Hot />} />
+                  <Route path="trend" element={<Trend />} />
+                  <Route path="uploader" element={<Uploader />} />
+                  <Route path="category" element={<Category />} />
+                  <Route path="player" element={<Player />} />
+                  <Route path="search" element={<Search />} />
+                  <Route path="gallery" element={<Gallery />} />
+                  <Route path="stats" element={<Stats />} />
+                  <Route path="ranking-change" element={<RankingChange />} />
+                  <Route path="favorites" element={<Favorites />} />
+                  <Route path="compare" element={<Compare />} />
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+              </Routes>
+            </ErrorBoundary>
+          </VideoModalProvider>
+        </FavoritesProvider>
       </BrowserRouter>
     </ConfigProvider>
   )

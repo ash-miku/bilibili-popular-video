@@ -14,6 +14,10 @@ import {
   MoonOutlined,
   SearchOutlined,
   PictureOutlined,
+  BarChartOutlined,
+  SwapOutlined,
+  HeartOutlined,
+  FundOutlined,
 } from '@ant-design/icons'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -25,6 +29,10 @@ const menuItems = [
   { key: '/trend', icon: <LineChartOutlined />, label: '趋势分析' },
   { key: '/uploader', icon: <UserOutlined />, label: 'UP主分析' },
   { key: '/category', icon: <AppstoreOutlined />, label: '分类分析' },
+  { key: '/stats', icon: <BarChartOutlined />, label: '数据概览' },
+  { key: '/ranking-change', icon: <SwapOutlined />, label: '排行变化' },
+  { key: '/favorites', icon: <HeartOutlined />, label: '我的收藏' },
+  { key: '/compare', icon: <FundOutlined />, label: '数据对比' },
   { key: '/gallery', icon: <PictureOutlined />, label: '封面画廊' },
 ]
 

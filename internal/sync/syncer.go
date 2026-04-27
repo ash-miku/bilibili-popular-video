@@ -38,6 +38,14 @@ func (s *Syncer) SyncDaily(ctx context.Context, date time.Time) error {
 	dateStr := date.Format(time.DateOnly)
 	slog.Info("sync daily started", "date", dateStr)
 
+	slog.Info("sync: deleting existing data for date", "date", dateStr)
+	if err := s.chStats.DeleteDailyStats(ctx, date); err != nil {
+		return fmt.Errorf("delete existing daily stats for %s: %w", dateStr, err)
+	}
+	if err := s.chStats.DeleteUploaderStats(ctx, date); err != nil {
+		return fmt.Errorf("delete existing uploader stats for %s: %w", dateStr, err)
+	}
+
 	videoStats, err := s.pgSnap.GetSnapshotsForSync(ctx, date)
 	if err != nil {
 		return fmt.Errorf("read video snapshots from pg for %s: %w", dateStr, err)

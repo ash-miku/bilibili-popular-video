@@ -12,6 +12,8 @@ import { getGalleryList, getPartitionList, type GalleryVideo } from '../api'
 import { useVideoModal } from './Player'
 import { formatCount } from '../utils/format'
 import { presets, presetToRange, type PresetKey } from '../utils/datePresets'
+import { useFavorites } from '../contexts/FavoritesContext'
+import { HeartOutlined, HeartFilled } from '@ant-design/icons'
 
 function proxyCoverUrl(url: string): string {
   if (!url) return ''
@@ -41,6 +43,7 @@ const PAGE_SIZE = 20
 
 export default function Gallery() {
   const videoModal = useVideoModal()
+  const { addFavorite, removeFavorite, isFavorite } = useFavorites()
   const containerRef = useRef<HTMLDivElement>(null)
 
   const [videos, setVideos] = useState<GalleryVideo[]>([])
@@ -262,6 +265,35 @@ export default function Gallery() {
           font-weight: 500;
           line-height: 1.4;
           z-index: 1;
+        }
+
+        .gallery-fav-btn {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.5);
+          color: #fff;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          opacity: 0;
+          transition: all 0.2s;
+          z-index: 3;
+        }
+
+        .gallery-card:hover .gallery-fav-btn {
+          opacity: 1;
+        }
+
+        .gallery-fav-btn:hover {
+          background: rgba(251, 114, 153, 0.7);
+          transform: scale(1.15);
         }
 
         .gallery-card:hover .gallery-duration-badge {
@@ -553,6 +585,30 @@ export default function Gallery() {
           <span className="gallery-duration-badge">
             {formatDuration(video.duration)}
           </span>
+          <button
+            className="gallery-fav-btn"
+            onClick={(e) => {
+              e.stopPropagation()
+              if (isFavorite(video.bvid)) {
+                removeFavorite(video.bvid)
+              } else {
+                addFavorite({
+                  bvid: video.bvid,
+                  title: video.title,
+                  uploader_name: video.uploader_name,
+                  view_count: video.view_count,
+                  like_count: video.like_count,
+                  partition_name: video.partition_name,
+                  cover_url: video.cover_url,
+                  duration: video.duration,
+                  addedAt: new Date().toISOString(),
+                })
+              }
+            }}
+            title={isFavorite(video.bvid) ? '取消收藏' : '收藏'}
+          >
+            {isFavorite(video.bvid) ? <HeartFilled /> : <HeartOutlined />}
+          </button>
           <div className="gallery-cover-overlay">
             <span className="gallery-cover-overlay-title">
               {video.title}
