@@ -182,7 +182,7 @@ func (r *StatsRepo) GetRanking(ctx context.Context, date time.Time, partitionId 
 
 		dataQuery = `
 			SELECT
-				$1 AS snapshot_date,
+				$1 AS query_date,
 				bvid,
 				argMax(title, snapshot_date) AS title,
 				argMax(uploader_mid, snapshot_date) AS uploader_mid,
@@ -211,7 +211,7 @@ func (r *StatsRepo) GetRanking(ctx context.Context, date time.Time, partitionId 
 
 		dataQuery = `
 			SELECT
-				$1 AS snapshot_date,
+				$1 AS query_date,
 				bvid,
 				argMax(title, snapshot_date) AS title,
 				argMax(uploader_mid, snapshot_date) AS uploader_mid,
@@ -239,6 +239,10 @@ func (r *StatsRepo) GetRanking(ctx context.Context, date time.Time, partitionId 
 	var total uint64
 	if err := r.conn.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count ranking for %s partition=%d: %w", date.Format("2006-01-02"), partitionId, err)
+	}
+
+	if total == 0 {
+		return nil, 0, nil
 	}
 
 	rows, err := r.conn.Query(ctx, dataQuery, dataArgs...)
@@ -352,7 +356,7 @@ func (r *StatsRepo) GetRankingChange(ctx context.Context, start, end time.Time, 
 			latest.view_count, latest.danmaku_count, latest.reply_count,
 			latest.favorite_count, latest.coin_count, latest.share_count,
 			latest.like_count, latest.rank_position
-		FROM `+statsDailyTable+` FINAL AS latest
+		FROM (SELECT * FROM `+statsDailyTable+` FINAL) AS latest
 		INNER JOIN (
 			SELECT bvid, view_count AS first_views
 			FROM `+statsDailyTable+` FINAL
@@ -414,7 +418,7 @@ func (r *StatsRepo) GetTopUploaders(ctx context.Context, date time.Time, sortBy 
 
 	query := fmt.Sprintf(`
 		SELECT
-			$1 AS stat_date,
+			$1 AS query_date,
 			uploader_mid,
 			argMax(uploader_name, stat_date) AS uploader_name,
 			sum(video_count) AS video_count,
@@ -645,44 +649,77 @@ func (r *StatsRepo) GetHotRanking(ctx context.Context, start, end time.Time, par
 	var dataQuery string
 	var dataArgs []interface{}
 
-	baseJoin := `
-		FROM `+statsDailyTable+` FINAL AS v
-		INNER JOIN (
-			SELECT bvid, max(snapshot_date) AS max_date
-			FROM `+statsDailyTable+` FINAL
-			WHERE snapshot_date BETWEEN $1 AND $2
-			GROUP BY bvid
-		) latest ON v.bvid = latest.bvid AND v.snapshot_date = latest.max_date
-	`
-
 	if partitionName != "" {
-		countQuery = "SELECT count(DISTINCT v.bvid) " + baseJoin + " WHERE v.partition_name = $3"
+		countQuery = `
+			SELECT count() FROM (
+				SELECT bvid FROM ` + statsDailyTable + ` FINAL
+				WHERE snapshot_date BETWEEN $1 AND $2 AND partition_name = $3
+				GROUP BY bvid
+			)`
 		countArgs = []interface{}{start, end, partitionName}
 
 		dataQuery = `
-			SELECT v.snapshot_date, v.bvid, v.title, v.uploader_mid, v.uploader_name,
-			       v.partition_id, v.partition_name, v.tags, v.view_count, v.danmaku_count,
-			       v.reply_count, v.favorite_count, v.coin_count, v.share_count,
-			       v.like_count, v.rank_position
-			` + baseJoin + `
-			WHERE v.partition_name = $3
-			ORDER BY v.view_count DESC
-			LIMIT 1 BY v.bvid
+			SELECT
+				max(snapshot_date) AS latest_date,
+				bvid,
+				argMax(title, snapshot_date) AS video_title,
+				argMax(uploader_mid, snapshot_date) AS uploader_mid,
+				argMax(uploader_name, snapshot_date) AS uploader_name,
+				argMax(partition_id, snapshot_date) AS partition_id,
+				argMax(partition_name, snapshot_date) AS partition_name,
+				any(tags) AS tags,
+				argMax(view_count, snapshot_date) AS view_count,
+				argMax(danmaku_count, snapshot_date) AS danmaku_count,
+				argMax(reply_count, snapshot_date) AS reply_count,
+				argMax(favorite_count, snapshot_date) AS favorite_count,
+				argMax(coin_count, snapshot_date) AS coin_count,
+				argMax(share_count, snapshot_date) AS share_count,
+				argMax(like_count, snapshot_date) AS like_count,
+				argMin(rank_position, snapshot_date) AS rank_position
+			FROM ` + statsDailyTable + ` FINAL
+			WHERE bvid IN (
+				SELECT DISTINCT bvid FROM ` + statsDailyTable + ` FINAL
+				WHERE snapshot_date BETWEEN $1 AND $2 AND partition_name = $3
+			)
+			GROUP BY bvid
+			ORDER BY view_count DESC
 			LIMIT $4 OFFSET $5
 		`
 		dataArgs = []interface{}{start, end, partitionName, uint64(pageSize), uint64(offset)}
 	} else {
-		countQuery = "SELECT count(DISTINCT v.bvid) " + baseJoin
+		countQuery = `
+			SELECT count() FROM (
+				SELECT bvid FROM ` + statsDailyTable + ` FINAL
+				WHERE snapshot_date BETWEEN $1 AND $2
+				GROUP BY bvid
+			)`
 		countArgs = []interface{}{start, end}
 
 		dataQuery = `
-			SELECT v.snapshot_date, v.bvid, v.title, v.uploader_mid, v.uploader_name,
-			       v.partition_id, v.partition_name, v.tags, v.view_count, v.danmaku_count,
-			       v.reply_count, v.favorite_count, v.coin_count, v.share_count,
-			       v.like_count, v.rank_position
-			` + baseJoin + `
-			ORDER BY v.view_count DESC
-			LIMIT 1 BY v.bvid
+			SELECT
+				max(snapshot_date) AS latest_date,
+				bvid,
+				argMax(title, snapshot_date) AS video_title,
+				argMax(uploader_mid, snapshot_date) AS uploader_mid,
+				argMax(uploader_name, snapshot_date) AS uploader_name,
+				argMax(partition_id, snapshot_date) AS partition_id,
+				argMax(partition_name, snapshot_date) AS partition_name,
+				any(tags) AS tags,
+				argMax(view_count, snapshot_date) AS view_count,
+				argMax(danmaku_count, snapshot_date) AS danmaku_count,
+				argMax(reply_count, snapshot_date) AS reply_count,
+				argMax(favorite_count, snapshot_date) AS favorite_count,
+				argMax(coin_count, snapshot_date) AS coin_count,
+				argMax(share_count, snapshot_date) AS share_count,
+				argMax(like_count, snapshot_date) AS like_count,
+				argMin(rank_position, snapshot_date) AS rank_position
+			FROM ` + statsDailyTable + ` FINAL
+			WHERE bvid IN (
+				SELECT DISTINCT bvid FROM ` + statsDailyTable + ` FINAL
+				WHERE snapshot_date BETWEEN $1 AND $2
+			)
+			GROUP BY bvid
+			ORDER BY view_count DESC
 			LIMIT $3 OFFSET $4
 		`
 		dataArgs = []interface{}{start, end, uint64(pageSize), uint64(offset)}
@@ -691,6 +728,10 @@ func (r *StatsRepo) GetHotRanking(ctx context.Context, start, end time.Time, par
 	var total uint64
 	if err := r.conn.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count hot ranking [%s, %s]: %w", start.Format("2006-01-02"), end.Format("2006-01-02"), err)
+	}
+
+	if total == 0 {
+		return nil, 0, nil
 	}
 
 	rows, err := r.conn.Query(ctx, dataQuery, dataArgs...)
@@ -731,34 +772,52 @@ func (r *StatsRepo) GetHotRanking(ctx context.Context, start, end time.Time, par
 func (r *StatsRepo) SearchVideos(ctx context.Context, query string, page, pageSize int) ([]model.VideoDailyStat, int, error) {
 	offset := (page - 1) * pageSize
 
-	baseJoin := `
-		FROM `+statsDailyTable+` FINAL AS v
-		INNER JOIN (
-			SELECT bvid, max(snapshot_date) AS max_date
-			FROM `+statsDailyTable+` FINAL
+	countQuery := `
+		SELECT count() FROM (
+			SELECT bvid FROM ` + statsDailyTable + ` FINAL
+			WHERE positionCaseInsensitive(title, $1) > 0
 			GROUP BY bvid
-		) latest ON v.bvid = latest.bvid AND v.snapshot_date = latest.max_date
+		)
 	`
 
 	var total uint64
-	if err := r.conn.QueryRow(ctx,
-		"SELECT count(DISTINCT v.bvid) "+baseJoin+" WHERE positionCaseInsensitive(v.title, $1) > 0",
-		query,
-	).Scan(&total); err != nil {
+	if err := r.conn.QueryRow(ctx, countQuery, query).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count search videos for q=%s: %w", query, err)
 	}
 
-	rows, err := r.conn.Query(ctx, `
-		SELECT v.snapshot_date, v.bvid, v.title, v.uploader_mid, v.uploader_name,
-		       v.partition_id, v.partition_name, v.tags, v.view_count, v.danmaku_count,
-		       v.reply_count, v.favorite_count, v.coin_count, v.share_count,
-		       v.like_count, v.rank_position
-	`+baseJoin+`
-		WHERE positionCaseInsensitive(v.title, $1) > 0
-		ORDER BY v.view_count DESC
-		LIMIT 1 BY v.bvid
+	if total == 0 {
+		return nil, 0, nil
+	}
+
+	dataQuery := `
+		SELECT
+			max(snapshot_date) AS latest_date,
+			bvid,
+			argMax(title, snapshot_date) AS video_title,
+			argMax(uploader_mid, snapshot_date) AS uploader_mid,
+			argMax(uploader_name, snapshot_date) AS uploader_name,
+			argMax(partition_id, snapshot_date) AS partition_id,
+			argMax(partition_name, snapshot_date) AS partition_name,
+			any(tags) AS tags,
+			argMax(view_count, snapshot_date) AS view_count,
+			argMax(danmaku_count, snapshot_date) AS danmaku_count,
+			argMax(reply_count, snapshot_date) AS reply_count,
+			argMax(favorite_count, snapshot_date) AS favorite_count,
+			argMax(coin_count, snapshot_date) AS coin_count,
+			argMax(share_count, snapshot_date) AS share_count,
+			argMax(like_count, snapshot_date) AS like_count,
+			argMin(rank_position, snapshot_date) AS rank_position
+		FROM ` + statsDailyTable + ` FINAL
+		WHERE bvid IN (
+			SELECT DISTINCT bvid FROM ` + statsDailyTable + ` FINAL
+			WHERE positionCaseInsensitive(title, $1) > 0
+		)
+		GROUP BY bvid
+		ORDER BY view_count DESC
 		LIMIT $2 OFFSET $3
-	`, query, uint64(pageSize), uint64(offset))
+	`
+
+	rows, err := r.conn.Query(ctx, dataQuery, query, uint64(pageSize), uint64(offset))
 	if err != nil {
 		return nil, 0, fmt.Errorf("query search videos for q=%s: %w", query, err)
 	}
@@ -793,7 +852,7 @@ func (r *StatsRepo) SearchUploaders(ctx context.Context, query string, page, pag
 	offset := (page - 1) * pageSize
 
 	baseJoin := `
-		FROM `+statsUploaderTable+` FINAL AS u
+		FROM (SELECT * FROM `+statsUploaderTable+` FINAL) AS u
 		INNER JOIN (
 			SELECT uploader_mid, max(stat_date) AS max_date
 			FROM `+statsUploaderTable+` FINAL
@@ -810,7 +869,7 @@ func (r *StatsRepo) SearchUploaders(ctx context.Context, query string, page, pag
 	}
 
 	rows, err := r.conn.Query(ctx, `
-		SELECT u.stat_date, u.uploader_mid, u.uploader_name, u.video_count,
+		SELECT u.stat_date, u.uploader_mid, u.uploader_name, toInt64(u.video_count),
 		       u.total_views, u.total_likes, u.avg_views
 	`+baseJoin+`
 		WHERE positionCaseInsensitive(u.uploader_name, $1) > 0
