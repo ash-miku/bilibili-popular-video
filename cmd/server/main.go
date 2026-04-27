@@ -161,6 +161,7 @@ func registerRoutes(r *gin.Engine, statsRepo *ch.StatsRepo, videoRepo *pg.VideoR
 	playerHandler := handler.NewPlayerHandler(cfg)
 	searchHandler := handler.NewSearchHandler(statsRepo)
 	galleryHandler := handler.NewGalleryHandler(statsRepo, videoRepo)
+	statsHandler := handler.NewStatsHandler(statsRepo)
 
 	v1 := r.Group("/api/v1")
 	{
@@ -209,6 +210,13 @@ func registerRoutes(r *gin.Engine, statsRepo *ch.StatsRepo, videoRepo *pg.VideoR
 		gallery := v1.Group("/gallery")
 		{
 			gallery.GET("/list", galleryHandler.List)
+		}
+
+		stats := v1.Group("/stats")
+		{
+			stats.GET("/overview", statsHandler.Overview)
+			stats.GET("/daily-trend", statsHandler.DailyTrend)
+			stats.GET("/heatmap", statsHandler.Heatmap)
 		}
 	}
 

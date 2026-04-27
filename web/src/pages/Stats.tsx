@@ -11,7 +11,7 @@ import {
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import dayjs from 'dayjs'
-import { getCategoryTrend } from '../api'
+import { getCategoryTrend, getStatsOverview, type StatsOverview } from '../api'
 import { formatCount } from '../utils/format'
 
 echarts.use([
@@ -31,35 +31,25 @@ interface DailyRow {
 const Stats: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [trendData, setTrendData] = useState<DailyRow[]>([])
+  const [overview, setOverview] = useState<StatsOverview | null>(null)
 
   useEffect(() => {
     const end = dayjs().format('YYYY-MM-DD')
     const start = dayjs().subtract(30, 'day').format('YYYY-MM-DD')
     setLoading(true)
-    getCategoryTrend(0, start, end)
-      .then((raw) => {
-        const rows = (raw ?? []).map((d) => ({
-          snapshot_date: String(d.snapshot_date ?? d.date ?? d.ds ?? ''),
-          video_count: Number(d.video_count ?? d.count ?? 0),
-          total_views: Number(d.total_views ?? d.view_count ?? 0),
-        })) as DailyRow[]
-        setTrendData(rows)
-      })
-      .catch(() => {
-        message.error('加载数据概览失败')
-      })
-      .finally(() => setLoading(false))
+    Promise.all([
+      getCategoryTrend(0, start, end).catch(() => { message.error('加载趋势数据失败'); return [] }),
+      getStatsOverview().catch(() => { message.error('加载概览失败'); return null }),
+    ]).then(([raw, ov]) => {
+      const rows = (raw ?? []).map((d) => ({
+        snapshot_date: String(d.snapshot_date ?? d.date ?? d.ds ?? ''),
+        video_count: Number(d.video_count ?? d.count ?? 0),
+        total_views: Number(d.total_views ?? d.view_count ?? 0),
+      })) as DailyRow[]
+      setTrendData(rows)
+      if (ov) setOverview(ov)
+    }).finally(() => setLoading(false))
   }, [])
-
-  const overviewStats = useMemo(() => {
-    const totalVideos = trendData.reduce((s, d) => s + d.video_count, 0)
-    const totalViews = trendData.reduce((s, d) => s + d.total_views, 0)
-    const totalDays = trendData.length
-    const latestDate = trendData.length > 0
-      ? trendData[trendData.length - 1].snapshot_date
-      : '—'
-    return { totalVideos, totalViews, totalDays, latestDate }
-  }, [trendData])
 
   const videoCountOption = useMemo(() => {
     if (trendData.length === 0) return null
@@ -170,10 +160,10 @@ const Stats: React.FC = () => {
   }, [trendData])
 
   const statCards = [
-    { label: '累计视频数', value: formatCount(overviewStats.totalVideos), icon: <VideoCameraOutlined />, color: '#FB7299' },
-    { label: '累计播放量', value: formatCount(overviewStats.totalViews), icon: <UserOutlined />, color: '#23ADE5' },
-    { label: '数据采集天数', value: String(overviewStats.totalDays), icon: <CalendarOutlined />, color: '#FFB027' },
-    { label: '最新数据日期', value: overviewStats.latestDate !== '—' ? dayjs(overviewStats.latestDate).format('YYYY-MM-DD') : '—', icon: <ClockCircleOutlined />, color: '#7B5FFF' },
+    { title: '累计视频数', value: overview?.total_videos ?? 0, icon: <VideoCameraOutlined />, color: '#23ADE5', bg: 'rgba(35,173,229,0.12)', format: formatCount },
+    { title: '累计UP主数', value: overview?.total_uploaders ?? 0, icon: <UserOutlined />, color: '#FB7299', bg: 'rgba(251,114,153,0.12)', format: formatCount },
+    { title: '数据采集天数', value: overview?.total_days ?? 0, icon: <CalendarOutlined />, color: '#FFB027', bg: 'rgba(255,176,39,0.12)', format: (v: number) => `${v} 天` },
+    { title: '最新数据日期', value: overview?.latest_date ?? '—', icon: <ClockCircleOutlined />, color: '#02B340', bg: 'rgba(2,179,64,0.12)', format: (v: string | number) => String(v).slice(5) },
   ]
 
   return (
@@ -187,17 +177,17 @@ const Stats: React.FC = () => {
       </div>
 
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        {statCards.map((card) => (
+        {statCards.map((card, i) => (
           <div
-            key={card.label}
+            key={i}
             className="stat-card"
             style={{ '--card-accent': card.color, flex: 1, minWidth: 180 } as React.CSSProperties}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <span style={{ color: card.color, fontSize: 20 }}>{card.icon}</span>
-              <div className="stat-label">{card.label}</div>
+              <div className="stat-label">{card.title}</div>
             </div>
-            <div className="stat-value" style={{ fontSize: 26 }}>{card.value}</div>
+            <div className="stat-value" style={{ fontSize: 26 }}>{card.format(card.value as never)}</div>
           </div>
         ))}
       </div>

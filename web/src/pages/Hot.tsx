@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Select, Spin, Empty, message } from 'antd'
-import { FireOutlined } from '@ant-design/icons'
+import { FireOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs, { Dayjs } from 'dayjs'
 import { getHotRanking, getCategoryDistribution, type VideoStat } from '../api'
 import { useVideoModal } from './Player'
+import { useFavorites } from '../contexts/FavoritesContext'
 import { formatCount } from '../utils/format'
 import { presets, presetToRange, type PresetKey } from '../utils/datePresets'
 
@@ -19,6 +20,7 @@ const Hot: React.FC = () => {
   const [partitionName, setPartitionName] = useState<string>('')
   const [partitions, setPartitions] = useState<{ label: string; value: string }[]>([])
   const videoModal = useVideoModal()
+  const { addFavorite, removeFavorite, isFavorite } = useFavorites()
   useEffect(() => {
     getCategoryDistribution(dayjs().subtract(1, 'day').format('YYYY-MM-DD'))
       .then((dist) => {
@@ -138,6 +140,48 @@ const Hot: React.FC = () => {
       width: 80,
       align: 'right',
       render: (n: number) => <span style={{ color: '#FFB027' }}>{formatCount(n)}</span>,
+    },
+    {
+      title: '',
+      key: 'fav',
+      width: 40,
+      align: 'center',
+      render: (_: unknown, record: VideoStat) => (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            if (isFavorite(record.bvid)) {
+              removeFavorite(record.bvid)
+            } else {
+              addFavorite({
+                bvid: record.bvid,
+                title: record.title,
+                uploader_name: record.uploader_name,
+                view_count: record.view_count,
+                like_count: record.like_count,
+                partition_name: record.partition_name,
+                cover_url: ((record as unknown) as Record<string, unknown>).cover_url as string ?? '',
+                duration: ((record as unknown) as Record<string, unknown>).duration as number ?? 0,
+                addedAt: new Date().toISOString(),
+              })
+            }
+          }}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: isFavorite(record.bvid) ? '#FF6B6B' : 'var(--text-muted)',
+            fontSize: 16,
+            transition: 'color 0.2s, transform 0.2s',
+            padding: 0,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+          title={isFavorite(record.bvid) ? '取消收藏' : '收藏'}
+        >
+          {isFavorite(record.bvid) ? <HeartFilled /> : <HeartOutlined />}
+        </button>
+      ),
     },
   ]
 

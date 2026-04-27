@@ -841,3 +841,57 @@ func (r *StatsRepo) SearchUploaders(ctx context.Context, query string, page, pag
 
 	return result, int(total), nil
 }
+
+func (r *StatsRepo) GetStatsOverview(ctx context.Context) (map[string]interface{}, error) {
+	row := r.conn.QueryRow(ctx, `
+		SELECT
+			countDistinct(bvid)           AS total_videos,
+			countDistinct(uploader_mid)   AS total_uploaders,
+			countDistinct(snapshot_date)  AS total_days,
+			max(snapshot_date)            AS latest_date
+		FROM `+statsDailyTable+` FINAL
+	`)
+	var totalVideos uint64
+	var totalUploaders uint64
+	var totalDays uint64
+	var latestDate time.Time
+	if err := row.Scan(&totalVideos, &totalUploaders, &totalDays, &latestDate); err != nil {
+		return nil, fmt.Errorf("scan stats overview: %w", err)
+	}
+	return map[string]interface{}{
+		"total_videos":    int(totalVideos),
+		"total_uploaders": int(totalUploaders),
+		"total_days":      int(totalDays),
+		"latest_date":     latestDate.Format("2006-01-02"),
+	}, nil
+}
+
+func (r *StatsRepo) GetHeatmapData(ctx context.Context, start, end time.Time) ([]map[string]interface{}, error) {
+	rows, err := r.conn.Query(ctx, `
+		SELECT snapshot_date, countDistinct(bvid) AS video_count, sum(view_count) AS total_views
+		FROM `+statsDailyTable+` FINAL
+		WHERE snapshot_date BETWEEN $1 AND $2
+		GROUP BY snapshot_date
+		ORDER BY snapshot_date ASC
+	`, start, end)
+	if err != nil {
+		return nil, fmt.Errorf("query heatmap data: %w", err)
+	}
+	defer rows.Close()
+	var result []map[string]interface{}
+	for rows.Next() {
+		var d time.Time
+		var vc uint64
+		var tv int64
+		if err := rows.Scan(&d, &vc, &tv); err != nil {
+			return nil, fmt.Errorf("scan heatmap row: %w", err)
+		}
+		result = append(result, map[string]interface{}{
+			"date": d.Format("2006-01-02"), "video_count": int(vc), "total_views": int(tv),
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate heatmap rows: %w", err)
+	}
+	return result, nil
+}

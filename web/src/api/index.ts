@@ -129,3 +129,25 @@ export interface GalleryVideo extends VideoStat {
 
 export const getGalleryList = (params?: { start?: string; end?: string; partitionName?: string; page?: number; pageSize?: number }) =>
   request<PaginatedData<GalleryVideo>>('/gallery/list', params as Record<string, string | number>)
+
+export interface StatsOverview {
+  total_videos: number
+  total_uploaders: number
+  total_days: number
+  latest_date: string
+}
+
+export const getStatsOverview = () =>
+  request<StatsOverview>('/stats/overview')
+
+export const getDailyTrend = (days?: number) =>
+  request<{ date: string; video_count: number; total_views: number }[]>('/stats/daily-trend', days ? { days } : {})
+
+export interface HeatmapItem {
+  date: string
+  video_count: number
+  total_views: number
+}
+
+export const getHeatmap = (days?: number) =>
+  request<HeatmapItem[]>('/stats/heatmap', days ? { days } : {})

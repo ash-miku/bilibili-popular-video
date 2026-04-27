@@ -18,6 +18,7 @@ import {
   SwapOutlined,
   HeartOutlined,
   FundOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -33,6 +34,7 @@ const menuItems = [
   { key: '/ranking-change', icon: <SwapOutlined />, label: '排行变化' },
   { key: '/favorites', icon: <HeartOutlined />, label: '我的收藏' },
   { key: '/compare', icon: <FundOutlined />, label: '数据对比' },
+  { key: '/calendar', icon: <CalendarOutlined />, label: '数据日历' },
   { key: '/gallery', icon: <PictureOutlined />, label: '封面画廊' },
 ]
 
