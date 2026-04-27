@@ -20,6 +20,7 @@ import {
   FundOutlined,
   CalendarOutlined,
   FieldTimeOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -37,6 +38,7 @@ const menuItems = [
   { key: '/compare', icon: <FundOutlined />, label: '数据对比' },
   { key: '/calendar', icon: <CalendarOutlined />, label: '数据日历' },
   { key: '/duration', icon: <FieldTimeOutlined />, label: '时长分析' },
+  { key: '/history', icon: <HistoryOutlined />, label: '历史榜单' },
   { key: '/gallery', icon: <PictureOutlined />, label: '封面画廊' },
 ]
 
