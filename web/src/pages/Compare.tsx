@@ -61,7 +61,7 @@ const Compare: React.FC = () => {
   const videoModal = useVideoModal()
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="analytics-page">
       <div className="bili-banner">
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <FundOutlined style={{ color: '#FB7299' }} />
@@ -245,7 +245,7 @@ function VideoCompare() {
 
   return (
     <div>
-      <Row gutter={16} style={{ marginBottom: 20 }}>
+      <Row gutter={[16, 16]} className="analytics-mobile-two-col" style={{ marginBottom: 20 }}>
         <Col span={12}>
           <Input.Search
             placeholder="搜索视频A（输入标题或BV号）"
@@ -271,18 +271,16 @@ function VideoCompare() {
       <Spin spinning={loading}>
         {itemA || itemB ? (
           <>
-            <Row gutter={16} style={{ marginBottom: 20 }}>
+            <Row gutter={[16, 16]} className="analytics-mobile-two-col" style={{ marginBottom: 20 }}>
               {[itemA, itemB].map((item, idx) => (
                 <Col span={12} key={idx}>
                   {item ? (
-                    <div
-                      style={{
-                        padding: 20,
-                        borderRadius: 12,
-                        border: `2px solid ${COMPARE_COLORS[idx]}`,
-                        background: 'var(--bg-card-solid)',
-                        cursor: 'pointer',
-                      }}
+                      <div
+                        className="analytics-compare-card"
+                        style={{
+                          border: `2px solid ${COMPARE_COLORS[idx]}`,
+                          cursor: 'pointer',
+                        }}
                       onClick={() => videoModal.open({
                         bvid: item.bvid,
                         title: item.title,
@@ -304,8 +302,8 @@ function VideoCompare() {
                       </div>
                     </div>
                   ) : (
-                    <div style={{
-                      padding: 40, borderRadius: 12, border: '2px dashed var(--border-subtle)',
+                    <div className="analytics-compare-card" style={{
+                      padding: 40, border: '2px dashed var(--border-subtle)',
                       textAlign: 'center', color: 'var(--text-muted)',
                     }}>
                       <PlayCircleOutlined style={{ fontSize: 32, marginBottom: 8, opacity: 0.4 }} />
@@ -507,7 +505,7 @@ function UploaderCompare() {
 
   return (
     <div>
-      <Row gutter={16} style={{ marginBottom: 20 }}>
+      <Row gutter={[16, 16]} className="analytics-mobile-two-col" style={{ marginBottom: 20 }}>
         <Col span={12}>
           <Input.Search
             placeholder="搜索UP主A"
@@ -533,14 +531,12 @@ function UploaderCompare() {
       <Spin spinning={loading}>
         {itemA || itemB ? (
           <>
-            <Row gutter={16} style={{ marginBottom: 20 }}>
+            <Row gutter={[16, 16]} className="analytics-mobile-two-col" style={{ marginBottom: 20 }}>
               {[itemA, itemB].map((item, idx) => (
                 <Col span={12} key={idx}>
                   {item ? (
-                    <div style={{
-                      padding: 20, borderRadius: 12,
+                    <div className="analytics-compare-card" style={{
                       border: `2px solid ${COMPARE_COLORS[idx]}`,
-                      background: 'var(--bg-card-solid)',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                         <UserOutlined style={{ color: COMPARE_COLORS[idx], fontSize: 18 }} />
@@ -556,8 +552,8 @@ function UploaderCompare() {
                       </div>
                     </div>
                   ) : (
-                    <div style={{
-                      padding: 40, borderRadius: 12, border: '2px dashed var(--border-subtle)',
+                    <div className="analytics-compare-card" style={{
+                      padding: 40, border: '2px dashed var(--border-subtle)',
                       textAlign: 'center', color: 'var(--text-muted)',
                     }}>
                       <UserOutlined style={{ fontSize: 32, marginBottom: 8, opacity: 0.4 }} />

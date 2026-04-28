@@ -89,7 +89,7 @@ const RankTracker: React.FC = () => {
   } : null
 
   return (
-    <div>
+    <div className="analytics-page">
       <div className="bili-banner" style={{ marginBottom: 20 }}>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <AimOutlined style={{ color: '#FB7299' }} />

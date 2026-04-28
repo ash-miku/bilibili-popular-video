@@ -7,6 +7,7 @@ const NotFound: React.FC = () => {
 
   return (
     <div
+      className="not-found-panel"
       style={{
         display: 'flex',
         justifyContent: 'center',
