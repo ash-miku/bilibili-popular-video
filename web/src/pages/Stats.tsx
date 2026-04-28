@@ -167,7 +167,7 @@ const Stats: React.FC = () => {
   ]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="analytics-page">
       <div className="bili-banner">
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <BarChartOutlined style={{ color: '#FB7299' }} />
@@ -176,7 +176,7 @@ const Stats: React.FC = () => {
         <p>跨日期趋势分析 · 数据采集健康度</p>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+      <div className="analytics-stat-grid">
         {statCards.map((card, i) => (
           <div
             key={i}

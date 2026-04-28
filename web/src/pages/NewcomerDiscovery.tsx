@@ -158,7 +158,7 @@ const NewcomerDiscovery: React.FC = () => {
   ]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="analytics-page">
       <div className="bili-banner">
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <RocketOutlined style={{ color: '#FB7299' }} />
@@ -167,7 +167,7 @@ const NewcomerDiscovery: React.FC = () => {
         <p>低产量高播放的潜力UP主 · 新人崛起趋势</p>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+      <div className="analytics-stat-grid">
         {statCards.map((card, i) => (
           <div key={i} className="stat-card" style={{ '--card-accent': card.color, flex: 1, minWidth: 160 } as React.CSSProperties}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -178,14 +178,14 @@ const NewcomerDiscovery: React.FC = () => {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>选择日期:</span>
+      <div className="analytics-toolbar">
+        <span className="analytics-toolbar__label">选择日期:</span>
         <DatePicker
           value={dayjs(date)}
           onChange={(d) => d && setDate(d.format('YYYY-MM-DD'))}
           allowClear={false}
         />
-        <span style={{ color: 'var(--text-secondary)', fontSize: 13, marginLeft: 16 }}>排序:</span>
+        <span className="analytics-toolbar__label">排序:</span>
         <Select
           value={sortBy}
           onChange={setSortBy}
