@@ -127,40 +127,40 @@ func (s *Scheduler) runDailyCrawl(ctx context.Context) {
 			return
 		case <-ticker.C:
 			now := time.Now()
-			today := now.Truncate(24 * time.Hour)
+			today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 
-		if now.Hour() == s.dailyHour && lastDailyDate.Before(today) {
-			// Persistent guard: if daily data already exists in ClickHouse
-			// (e.g. after a container restart within the same day), skip to
-			// avoid sending duplicate notifications.
-			if s.statsRepo != nil {
-				hasData, err := s.statsRepo.HasDailyStats(ctx, today)
-				if err != nil {
-					slog.Warn("scheduler: failed to check existing daily data", "error", err)
-				} else if hasData {
-					slog.Info("scheduler: daily data already synced, skipping",
-						"date", today.Format("2006-01-02"))
-					lastDailyDate = today
-					continue
+			if now.Hour() == s.dailyHour && lastDailyDate.Before(today) {
+				// Persistent guard: if daily data already exists in ClickHouse
+				// (e.g. after a container restart within the same day), skip to
+				// avoid sending duplicate notifications.
+				if s.statsRepo != nil {
+					hasData, err := s.statsRepo.HasDailyStats(ctx, today)
+					if err != nil {
+						slog.Warn("scheduler: failed to check existing daily data", "error", err)
+					} else if hasData {
+						slog.Info("scheduler: daily data already synced, skipping",
+							"date", today.Format("2006-01-02"))
+						lastDailyDate = today
+						continue
+					}
 				}
-			}
 
-			slog.Info("scheduler: daily full crawl starting")
-			if err := s.crawler.CrawlDaily(ctx); err != nil {
-				slog.Error("scheduler: daily crawl failed", "error", err)
-			}
-
-			if s.syncer != nil {
-				slog.Info("scheduler: syncing daily data to clickhouse")
-				if err := s.syncer.SyncDaily(ctx, today); err != nil {
-					slog.Error("scheduler: sync daily failed", "error", err)
-				} else {
-					s.sendDailyNotification(ctx, today)
+				slog.Info("scheduler: daily full crawl starting")
+				if err := s.crawler.CrawlDaily(ctx); err != nil {
+					slog.Error("scheduler: daily crawl failed", "error", err)
 				}
-			}
 
-			lastDailyDate = today
-		}
+				if s.syncer != nil {
+					slog.Info("scheduler: syncing daily data to clickhouse")
+					if err := s.syncer.SyncDaily(ctx, today); err != nil {
+						slog.Error("scheduler: sync daily failed", "error", err)
+					} else {
+						s.sendDailyNotification(ctx, today)
+					}
+				}
+
+				lastDailyDate = today
+			}
 		}
 	}
 }

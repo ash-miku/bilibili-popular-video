@@ -243,7 +243,8 @@ func (c *BilibiliCrawler) FetchUploaderInfo(ctx context.Context, mid int64) (*mo
 // today's date.
 func (c *BilibiliCrawler) CrawlRanking(ctx context.Context) error {
 	slog.Info("crawl ranking: starting popular video crawl")
-	today := time.Now().Truncate(24 * time.Hour)
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	totalVideos := 0
 
 	for pn := 1; pn <= 5; pn++ {

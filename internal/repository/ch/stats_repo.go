@@ -677,10 +677,7 @@ func (r *StatsRepo) GetHotRanking(ctx context.Context, start, end time.Time, par
 				argMax(like_count, snapshot_date) AS like_count,
 				argMin(rank_position, snapshot_date) AS rank_position
 			FROM ` + statsDailyTable + ` FINAL
-			WHERE bvid IN (
-				SELECT DISTINCT bvid FROM ` + statsDailyTable + ` FINAL
-				WHERE snapshot_date BETWEEN $1 AND $2 AND partition_name = $3
-			)
+			WHERE snapshot_date BETWEEN $1 AND $2 AND partition_name = $3
 			GROUP BY bvid
 			ORDER BY view_count DESC
 			LIMIT $4 OFFSET $5
@@ -714,10 +711,7 @@ func (r *StatsRepo) GetHotRanking(ctx context.Context, start, end time.Time, par
 				argMax(like_count, snapshot_date) AS like_count,
 				argMin(rank_position, snapshot_date) AS rank_position
 			FROM ` + statsDailyTable + ` FINAL
-			WHERE bvid IN (
-				SELECT DISTINCT bvid FROM ` + statsDailyTable + ` FINAL
-				WHERE snapshot_date BETWEEN $1 AND $2
-			)
+			WHERE snapshot_date BETWEEN $1 AND $2
 			GROUP BY bvid
 			ORDER BY view_count DESC
 			LIMIT $3 OFFSET $4

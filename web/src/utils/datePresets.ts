@@ -16,7 +16,7 @@ export function presetToRange(key: PresetKey): [Dayjs, Dayjs] {
     case '24h': return [dayjs().subtract(24, 'hour'), dayjs()]
     case 'today': return [today, dayjs()]
     case 'yesterday': return [today.subtract(1, 'day'), today.subtract(1, 'day')]
-    case '7d': return [today.subtract(7, 'day'), dayjs()]
+    case '7d': return [today.subtract(6, 'day'), dayjs()]
     case '30d': return [today.subtract(30, 'day'), dayjs()]
   }
 }

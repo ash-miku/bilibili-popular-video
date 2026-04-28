@@ -103,7 +103,8 @@ func main() {
 				return
 			}
 		} else {
-			syncDate = time.Now().Truncate(24 * time.Hour)
+			now := time.Now()
+			syncDate = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 		}
 		slog.Info("manual sync triggered", "date", syncDate.Format("2006-01-02"))
 		if err := syncer.SyncDaily(c.Request.Context(), syncDate); err != nil {
