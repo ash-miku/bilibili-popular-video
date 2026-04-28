@@ -128,7 +128,7 @@ const DurationPage: React.FC = () => {
   }
 
   return (
-    <div>
+    <div className="analytics-page">
       <div className="bili-banner" style={{ marginBottom: 20 }}>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <FieldTimeOutlined style={{ color: '#FB7299' }} />
@@ -137,17 +137,14 @@ const DurationPage: React.FC = () => {
         <p>视频时长分布统计 · 了解热门视频的内容长度偏好</p>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
+      <div className="analytics-stat-grid" style={{ marginBottom: 20 }}>
         {[
           { label: '视频总数', value: durations.length, color: '#23ADE5' },
           { label: '平均时长', value: fmtDur(avgDuration), color: '#FB7299' },
           { label: '中位时长', value: fmtDur(medianDuration), color: '#FFB027' },
           { label: '最常时长区间', value: buckets.reduce((a, b) => a.count > b.count ? a : b).label, color: '#02B340' },
         ].map((card, i) => (
-          <div key={i} style={{
-            flex: 1, padding: 20, borderRadius: 12,
-            background: 'var(--bg-card)', border: '1px solid var(--border-card)',
-          }}>
+          <div key={i} className="analytics-stat-panel">
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>{card.label}</div>
             <div style={{ fontSize: 24, fontWeight: 700, color: card.color }}>{card.value}</div>
           </div>
@@ -159,13 +156,13 @@ const DurationPage: React.FC = () => {
       ) : durations.length === 0 ? (
         <Empty description="暂无数据" />
       ) : (
-        <div style={{ display: 'flex', gap: 20 }}>
-          <div style={{ flex: 1 }} className="section-card">
+        <div className="analytics-split-grid">
+          <div className="section-card">
             <div className="section-body">
               <ReactEChartsCore echarts={echarts} option={pieOption} style={{ height: 380 }} notMerge lazyUpdate />
             </div>
           </div>
-          <div style={{ flex: 1 }} className="section-card">
+          <div className="section-card">
             <div className="section-header">
               <div className="section-title"><span className="title-dot" />时长分布柱状图</div>
             </div>

@@ -91,7 +91,7 @@ const CalendarPage: React.FC = () => {
   const activeDays = data.filter((d) => d.video_count > 0).length
 
   return (
-    <div>
+    <div className="analytics-page">
       <div className="bili-banner" style={{ marginBottom: 20 }}>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <CalendarOutlined style={{ color: '#FB7299' }} />
@@ -100,17 +100,14 @@ const CalendarPage: React.FC = () => {
         <p>日历热力图展示每日数据采集量 · 直观发现数据趋势</p>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
+      <div className="analytics-stat-grid" style={{ marginBottom: 20 }}>
         {[
           { label: `${days} 天内视频总数`, value: totalVideos, color: '#23ADE5' },
           { label: '总播放量', value: totalViews, color: '#FB7299' },
           { label: '有数据天数', value: activeDays, color: '#FFB027' },
           { label: '日均视频数', value: activeDays > 0 ? Math.round(totalVideos / activeDays) : 0, color: '#02B340' },
         ].map((card, i) => (
-          <div key={i} style={{
-            flex: 1, padding: 20, borderRadius: 12,
-            background: 'var(--bg-card)', border: '1px solid var(--border-card)',
-          }}>
+          <div key={i} className="analytics-stat-panel">
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>{card.label}</div>
             <div style={{ fontSize: 28, fontWeight: 700, color: card.color }}>
               {typeof card.value === 'number' && card.value > 9999
@@ -127,17 +124,19 @@ const CalendarPage: React.FC = () => {
             <span className="title-dot" />
             数据采集热力图
           </div>
-          <Select
-            value={days}
-            onChange={setDays}
-            options={[
-              { label: '最近 30 天', value: 30 },
-              { label: '最近 90 天', value: 90 },
-              { label: '最近 180 天', value: 180 },
-              { label: '最近 365 天', value: 365 },
-            ]}
-            style={{ width: 140 }}
-          />
+          <div className="section-header-actions">
+            <Select
+              value={days}
+              onChange={setDays}
+              options={[
+                { label: '最近 30 天', value: 30 },
+                { label: '最近 90 天', value: 90 },
+                { label: '最近 180 天', value: 180 },
+                { label: '最近 365 天', value: 365 },
+              ]}
+              style={{ width: 140 }}
+            />
+          </div>
         </div>
         <div className="section-body">
           {loading ? (

@@ -243,7 +243,7 @@ const WeeklyReport: React.FC = () => {
   ]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="analytics-page">
       <div className="bili-banner">
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <FileTextOutlined style={{ color: '#FB7299' }} />
@@ -252,15 +252,15 @@ const WeeklyReport: React.FC = () => {
         <p>本周数据汇总 · 一站式回顾</p>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>选择周期:</span>
+      <div className="analytics-toolbar">
+        <span className="analytics-toolbar__label">选择周期:</span>
         <DatePicker
           value={dayjs(weekStart)}
           onChange={(d) => d && setWeekStart(d.format('YYYY-MM-DD'))}
           allowClear={false}
           placeholder="开始日期"
         />
-        <span style={{ color: 'var(--text-muted)' }}>~</span>
+        <span className="analytics-toolbar__label">~</span>
         <DatePicker
           value={dayjs(weekEnd)}
           onChange={(d) => d && setWeekEnd(d.format('YYYY-MM-DD'))}
@@ -269,7 +269,7 @@ const WeeklyReport: React.FC = () => {
         />
       </div>
 
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+      <div className="analytics-stat-grid">
         {statCards.map((card, i) => (
           <div key={i} className="stat-card" style={{ '--card-accent': card.color, flex: 1, minWidth: 140 } as React.CSSProperties}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -301,7 +301,7 @@ const WeeklyReport: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 16 }}>
+            <div className="analytics-split-grid">
               <div className="section-card" style={{ flex: 1 }}>
                 <div className="section-header">
                   <div className="section-title">
