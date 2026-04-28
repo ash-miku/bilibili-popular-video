@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Drawer } from 'antd'
 import {
   DashboardOutlined,
   LineChartOutlined,
@@ -27,6 +28,7 @@ import {
   InteractionOutlined,
   RocketOutlined,
   FileTextOutlined,
+  MenuOutlined,
 } from '@ant-design/icons'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -79,10 +81,65 @@ const MainLayout: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
   const { isDark, toggleTheme } = useTheme()
 
+  const navigateTo = (path: string) => {
+    navigate(path)
+    setMobileDrawerOpen(false)
+  }
+
+  const renderMenuGroups = (isCollapsed: boolean) => (
+    menuGroups.map((group) => (
+      <div key={group.label}>
+        {!isCollapsed ? (
+          <div className="menu-group-label">{group.label}</div>
+        ) : (
+          <div className="menu-group-divider" />
+        )}
+        {group.items.map((item) => {
+          const isActive = location.pathname === item.key
+          return (
+            <button
+              key={item.key}
+              className={`menu-item${isActive ? ' active' : ''}`}
+              onClick={() => navigateTo(item.key)}
+              title={isCollapsed ? item.label : undefined}
+            >
+              <span className="menu-icon">{item.icon}</span>
+              {!isCollapsed && <span>{item.label}</span>}
+            </button>
+          )
+        })}
+      </div>
+    ))
+  )
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="bili-layout-shell" style={{ display: 'flex', minHeight: '100vh' }}>
+      <div className="bili-mobile-topbar">
+        <button
+          className="bili-mobile-topbar__menu"
+          onClick={() => setMobileDrawerOpen(true)}
+          aria-label="打开导航菜单"
+        >
+          <MenuOutlined />
+        </button>
+        <button className="bili-mobile-topbar__brand" onClick={() => navigateTo('/dashboard')}>
+          <span className="bili-mobile-topbar__brand-icon">
+            <ThunderboltOutlined />
+          </span>
+          <span className="bili-mobile-topbar__brand-text">B站热门分析</span>
+        </button>
+        <button
+          className="bili-mobile-topbar__theme"
+          onClick={toggleTheme}
+          aria-label={isDark ? '切换到浅色模式' : '切换到深色模式'}
+        >
+          {isDark ? <SunOutlined /> : <MoonOutlined />}
+        </button>
+      </div>
+
       <aside
         className="bili-sidebar"
         style={{
@@ -111,29 +168,7 @@ const MainLayout: React.FC = () => {
         </div>
 
         <nav className="sidebar-menu" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-          {menuGroups.map((group) => (
-            <div key={group.label}>
-              {!collapsed ? (
-                <div className="menu-group-label">{group.label}</div>
-              ) : (
-                <div className="menu-group-divider" />
-              )}
-              {group.items.map((item) => {
-                const isActive = location.pathname === item.key
-                return (
-                  <button
-                    key={item.key}
-                    className={`menu-item${isActive ? ' active' : ''}`}
-                    onClick={() => navigate(item.key)}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <span className="menu-icon">{item.icon}</span>
-                    {!collapsed && <span>{item.label}</span>}
-                  </button>
-                )
-              })}
-            </div>
-          ))}
+          {renderMenuGroups(collapsed)}
         </nav>
 
         <div className="sidebar-footer">
@@ -160,6 +195,39 @@ const MainLayout: React.FC = () => {
           </button>
         </div>
       </aside>
+
+      <Drawer
+        className="bili-mobile-drawer"
+        placement="left"
+        open={mobileDrawerOpen}
+        onClose={() => setMobileDrawerOpen(false)}
+        width={280}
+        title={(
+          <div className="bili-mobile-drawer__title">
+            <span className="bili-mobile-drawer__title-icon">
+              <ThunderboltOutlined />
+            </span>
+            <div>
+              <div className="logo-text">B站热门分析</div>
+              <div className="logo-sub">Popular Video Analytics</div>
+            </div>
+          </div>
+        )}
+        footer={(
+          <div className="bili-mobile-drawer__footer">
+            <button className="menu-item sidebar-action-btn" onClick={toggleTheme}>
+              <span className="menu-icon theme-toggle-icon">
+                {isDark ? <SunOutlined /> : <MoonOutlined />}
+              </span>
+              <span>{isDark ? '浅色模式' : '深色模式'}</span>
+            </button>
+          </div>
+        )}
+      >
+        <nav className="sidebar-menu bili-mobile-drawer__menu">
+          {renderMenuGroups(false)}
+        </nav>
+      </Drawer>
 
       <main
         className="bili-content"

@@ -119,20 +119,21 @@ export const VideoModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         afterOpenChange={handleAfterOpenChange}
         footer={null}
         destroyOnClose
+        className="player-modal"
         width={'90vw'}
         style={{ maxWidth: 1600 }}
         centered
         title={video ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="player-modal__title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <PlayCircleOutlined style={{ color: '#FB7299' }} />
-            <span style={{ fontWeight: 600, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60vw' }}>{video.title || video.bvid}</span>
+            <span className="player-modal__title-text" style={{ fontWeight: 600, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60vw' }}>{video.title || video.bvid}</span>
             {video.uploaderName && (
-              <span style={{ fontWeight: 400, fontSize: 13, color: 'var(--text-secondary)' }}>
+              <span className="player-modal__meta" style={{ fontWeight: 400, fontSize: 13, color: 'var(--text-secondary)' }}>
                 · {video.uploaderName}
               </span>
             )}
             {video.viewCount !== undefined && (
-              <span style={{ fontWeight: 400, fontSize: 13, color: '#FB7299' }}>
+              <span className="player-modal__meta" style={{ fontWeight: 400, fontSize: 13, color: '#FB7299' }}>
                 · {formatCount(video.viewCount)} 播放
               </span>
             )}
@@ -164,7 +165,7 @@ export const VideoModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             </div>
           )}
         </div>
-        <div style={{ padding: '8px 16px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div className="player-modal__hint" style={{ padding: '8px 16px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             点击播放器右侧「清晰度」按钮选择（720P / 1080P / 4K）
           </span>
@@ -220,8 +221,9 @@ const Player: React.FC = () => {
 
       <div className="section-card">
         <div style={{ padding: '20px 24px' }}>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div className="player-toolbar" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <Input
+              className="player-toolbar__input"
               placeholder="输入 BV号（如 BV1xx411c7mD）或粘贴视频链接"
               prefix={<SearchOutlined style={{ color: 'var(--text-muted)' }} />}
               suffix={bvid ? (
@@ -236,6 +238,7 @@ const Player: React.FC = () => {
               style={{ flex: 1, height: 44, fontSize: 15, borderRadius: 10 }}
             />
             <button
+              className="player-toolbar__button"
               onClick={handlePlay}
               style={{
                 height: 44,
@@ -259,12 +262,12 @@ const Player: React.FC = () => {
           </div>
 
           {history.length > 0 && (
-            <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '28px', marginRight: 4 }}>最近播放：</span>
+            <div className="player-history" style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <span className="player-history__label" style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '28px', marginRight: 4 }}>最近播放：</span>
               {history.slice(0, 10).map((h) => (
                 <span
                   key={h.bvid}
-                  className="partition-tag"
+                  className="partition-tag player-history__chip"
                   style={{ cursor: 'pointer', transition: 'all 0.2s' }}
                   onClick={() => { setBvid(h.bvid); setPlayingBvid(h.bvid); open({ bvid: h.bvid }) }}
                 >

@@ -214,10 +214,11 @@ const Hot: React.FC = () => {
               共 <span style={{ color: '#FB7299', fontWeight: 600 }}>{total}</span> 个视频
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div className="hot-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             {presets.map((p) => (
               <button
                 key={p.key}
+                className="hot-toolbar__preset"
                 onClick={() => {
                   setActivePreset(p.key)
                   setDateRange(presetToRange(p.key))
@@ -242,6 +243,7 @@ const Hot: React.FC = () => {
               value={partitionName}
               onChange={(val) => { setPartitionName(val); setPage(1) }}
               options={[{ label: '全部分区', value: '' }, ...partitions]}
+              className="hot-toolbar__select"
               style={{ width: 160 }}
               placeholder="选择分区"
               showSearch
@@ -257,17 +259,21 @@ const Hot: React.FC = () => {
             </div>
           ) : (
             <Table<VideoStat>
+              className="hot-table"
               rowKey="bvid"
               columns={columns}
               dataSource={data}
+              scroll={{ x: 900 }}
               pagination={{
                 current: page,
                 pageSize,
                 total,
                 showSizeChanger: true,
-                showQuickJumper: true,
+                showQuickJumper: typeof window !== 'undefined' ? window.innerWidth > 768 : true,
                 pageSizeOptions: ['10', '20', '50'],
                 showTotal: (t) => `共 ${t} 条`,
+                size: typeof window !== 'undefined' && window.innerWidth <= 768 ? 'small' : 'default',
+                responsive: true,
               }}
               onChange={(pagination) => {
                 setPage(pagination.current ?? 1)
