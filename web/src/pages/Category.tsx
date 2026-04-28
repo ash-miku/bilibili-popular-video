@@ -345,8 +345,8 @@ const Category: React.FC = () => {
   }, [hotTags, tagsDate, tagCloudPalette])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <Row gutter={20}>
+    <div className="analytics-page">
+      <Row gutter={[20, 20]} className="analytics-mobile-two-col">
         <Col span={12}>
           <div className="section-card">
             <div className="section-header">
@@ -478,7 +478,7 @@ const Category: React.FC = () => {
             <span className="title-dot" style={{ background: '#23ADE5' }} />
             分区热度趋势
           </div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div className="section-header-actions">
             <RangePicker
               size="small"
               value={trendRange}

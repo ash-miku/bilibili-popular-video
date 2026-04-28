@@ -383,8 +383,8 @@ const Trend: React.FC = () => {
             视频趋势查询
           </div>
         </div>
-        <div className="section-body">
-          <div className="dark-search" style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <div className="section-body">
+            <div className="dark-search analytics-toolbar">
             <Input.Search
               placeholder="输入BV号，如 BV1xx411c7mD"
               value={bvid}
@@ -465,8 +465,8 @@ const Trend: React.FC = () => {
               <span>{launchData[0].title} — 爬坡曲线</span>
             </div>
           </div>
-          <div className="section-body">
-            <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
+            <div className="section-body">
+              <div className="analytics-stat-grid" style={{ marginBottom: 20 }}>
               {[
                 { label: '24h增长', value: launchMetrics.h24, color: '#FB7299' },
                 { label: '3日增长', value: launchMetrics.d3, color: '#23ADE5' },
@@ -495,7 +495,7 @@ const Trend: React.FC = () => {
         </div>
       )}
 
-      <div className="section-card">
+      <div className="section-card analytics-table-card">
         <div className="section-header">
           <div className="section-title">
             <span className="title-dot" style={{ background: '#23ADE5' }} />

@@ -115,7 +115,7 @@ const PartitionRank: React.FC = () => {
   }), [trend])
 
   return (
-    <div>
+    <div className="analytics-page">
       <div className="bili-banner" style={{ marginBottom: 20 }}>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <AppstoreOutlined style={{ color: '#FB7299' }} />
@@ -124,13 +124,13 @@ const PartitionRank: React.FC = () => {
         <p>各分区视频数量排行 · 分区趋势对比分析</p>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
+      <div className="analytics-stat-grid" style={{ marginBottom: 20 }}>
         {[
           { label: '分区总数', value: ranked.length, color: '#23ADE5' },
           { label: '最热分区', value: ranked[0]?.name ?? '-', color: '#FB7299' },
           { label: '最热视频数', value: ranked[0]?.count ?? 0, color: '#FFB027' },
         ].map((card, i) => (
-          <div key={i} style={{ flex: 1, padding: 20, borderRadius: 12, background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+          <div key={i} className="analytics-stat-panel">
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>{card.label}</div>
             <div style={{ fontSize: 24, fontWeight: 700, color: card.color }}>{card.value}</div>
           </div>
@@ -151,7 +151,7 @@ const PartitionRank: React.FC = () => {
       <div className="section-card">
         <div className="section-header">
           <div className="section-title"><span className="title-dot" />分区趋势对比</div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="section-header-actions">
             {presets.map((p) => (
               <button key={p.key} onClick={() => { setActivePreset(p.key) }}
                 style={{
