@@ -323,7 +323,7 @@ export default function Gallery() {
           <p>瀑布流浏览模式 · 直观发现热门内容</p>
         </div>
 
-        <div className="gallery-filters">
+        <div className="gallery-filters analytics-toolbar">
           {presets.map((p) => (
             <button
               key={p.key}

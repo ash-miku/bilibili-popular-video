@@ -85,16 +85,7 @@ const Favorites: React.FC = () => {
             >
               <button
                 onClick={(e) => e.stopPropagation()}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  fontSize: 16,
-                  padding: '4px 8px',
-                  borderRadius: 6,
-                  transition: 'all 0.2s',
-                }}
+                className="favorite-action-btn"
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = '#FB7299'
                 }}
@@ -113,21 +104,7 @@ const Favorites: React.FC = () => {
   }
 
   return (
-    <>
-      <style>{`
-        .fav-empty-wrap {
-          padding: 100px 0;
-          text-align: center;
-        }
-        .fav-empty-icon {
-          font-size: 64px;
-          color: var(--text-muted);
-          opacity: 0.3;
-          margin-bottom: 16px;
-        }
-      `}</style>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div className="analytics-page" style={{ gap: 24 }}>
         <div className="bili-banner">
           <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <HeartOutlined style={{ color: '#FB7299' }} />
@@ -138,8 +115,8 @@ const Favorites: React.FC = () => {
 
         {sorted.length === 0 ? (
           <div className="section-card">
-            <div className="fav-empty-wrap">
-              <div className="fav-empty-icon">
+            <div className="favorites-empty-wrap">
+              <div className="favorites-empty-icon">
                 <HeartOutlined />
               </div>
               <Empty description="还没有收藏视频，快去浏览热门榜单收藏吧" />
@@ -156,19 +133,20 @@ const Favorites: React.FC = () => {
                 </span>
               </div>
             </div>
-            <Masonry
-              items={sorted}
-              columnGutter={16}
-              columnWidth={320}
-              itemHeightEstimate={300}
-              overscanBy={3}
-              render={FavoriteCard}
-              itemKey={(data: FavoriteItem) => data.bvid}
-            />
+            <div className="favorites-masonry">
+              <Masonry
+                items={sorted}
+                columnGutter={16}
+                columnWidth={320}
+                itemHeightEstimate={300}
+                overscanBy={3}
+                render={FavoriteCard}
+                itemKey={(data: FavoriteItem) => data.bvid}
+              />
+            </div>
           </div>
         )}
       </div>
-    </>
   )
 }
 

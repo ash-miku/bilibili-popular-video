@@ -106,7 +106,7 @@ const RankingChange: React.FC = () => {
   }, [data])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="analytics-page">
       <div className="bili-banner">
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <SwapOutlined style={{ color: '#FB7299' }} />
@@ -124,7 +124,7 @@ const RankingChange: React.FC = () => {
               共 <span style={{ color: '#FB7299', fontWeight: 600 }}>{data.length}</span> 个视频
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div className="section-header-actions">
             {presets.map((p) => (
               <button
                 key={p.key}
