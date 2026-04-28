@@ -325,14 +325,14 @@ const Uploader: React.FC = () => {
   }
 
   return (
-    <div>
-      <div className="section-card">
+    <div className="analytics-page">
+      <div className="section-card analytics-table-card">
         <div className="section-header">
           <div className="section-title">
             <TrophyOutlined style={{ color: '#FFB027' }} />
             TOP UP主排行
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="section-header-actions">
             <Select
               value={sortBy}
               onChange={(val) => {
@@ -380,10 +380,12 @@ const Uploader: React.FC = () => {
             style: { cursor: 'pointer' },
           })}
           size="middle"
+          scroll={{ x: 760 }}
         />
       </div>
 
       <Drawer
+        rootClassName="uploader-detail-drawer"
         title={
           currentUploader ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -408,14 +410,7 @@ const Uploader: React.FC = () => {
       >
         {currentUploader && (
           <>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: 12,
-                marginBottom: 20,
-              }}
-            >
+            <div className="analytics-stat-grid" style={{ marginBottom: 20 }}>
               {[
                 { label: '总播放', value: formatCount(currentUploader.total_views), color: CHART_COLORS.views },
                 { label: '总点赞', value: formatCount(currentUploader.total_likes), color: CHART_COLORS.likes },

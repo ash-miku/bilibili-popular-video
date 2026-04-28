@@ -80,7 +80,7 @@ const UploaderLeaderboard: React.FC = () => {
   }, [data])
 
   return (
-    <div>
+    <div className="analytics-page">
       <div className="bili-banner" style={{ marginBottom: 20 }}>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <TrophyOutlined style={{ color: '#FB7299' }} />
@@ -95,17 +95,19 @@ const UploaderLeaderboard: React.FC = () => {
             <TrophyOutlined style={{ color: '#FFB027' }} />
             Top 20 UP主
           </div>
-          <Select
-            value={sortBy}
-            onChange={setSortBy}
-            options={[
-              { label: '按播放量', value: 'total_views' },
-              { label: '按视频数', value: 'video_count' },
-              { label: '按平均播放', value: 'avg_views' },
-              { label: '按总点赞', value: 'total_likes' },
-            ]}
-            style={{ width: 140 }}
-          />
+          <div className="section-header-actions">
+            <Select
+              value={sortBy}
+              onChange={setSortBy}
+              options={[
+                { label: '按播放量', value: 'total_views' },
+                { label: '按视频数', value: 'video_count' },
+                { label: '按平均播放', value: 'avg_views' },
+                { label: '按总点赞', value: 'total_likes' },
+              ]}
+              style={{ width: 140 }}
+            />
+          </div>
         </div>
         <div className="section-body">
           {loading ? (
@@ -115,7 +117,7 @@ const UploaderLeaderboard: React.FC = () => {
           ) : (
             <>
               <ReactEChartsCore echarts={echarts} option={chartOption} style={{ height: 420 }} notMerge lazyUpdate />
-              <div style={{ marginTop: 20 }}>
+              <div className="analytics-custom-table" style={{ marginTop: 20 }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
