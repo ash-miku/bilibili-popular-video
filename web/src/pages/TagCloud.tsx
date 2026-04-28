@@ -85,7 +85,7 @@ const TagCloud: React.FC = () => {
   ]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="analytics-page">
       <div className="bili-banner">
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <TagOutlined style={{ color: '#FB7299' }} />
@@ -94,7 +94,7 @@ const TagCloud: React.FC = () => {
         <p>热门视频标签可视化 · 标签热度排行</p>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+      <div className="analytics-stat-grid">
         {statCards.map((card, i) => (
           <div key={i} className="stat-card" style={{ '--card-accent': card.color, flex: 1, minWidth: 160 } as React.CSSProperties}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -107,14 +107,14 @@ const TagCloud: React.FC = () => {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>选择日期:</span>
+      <div className="analytics-toolbar">
+        <span className="analytics-toolbar__label">选择日期:</span>
         <DatePicker
           value={dayjs(selectedDate)}
           onChange={(d) => d && setSelectedDate(d.format('YYYY-MM-DD'))}
           allowClear={false}
         />
-        <span style={{ color: 'var(--text-secondary)', fontSize: 13, marginLeft: 16 }}>标签数量:</span>
+        <span className="analytics-toolbar__label">标签数量:</span>
         <Select
           value={topN}
           onChange={setTopN}
