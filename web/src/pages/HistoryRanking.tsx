@@ -113,7 +113,7 @@ const HistoryRanking: React.FC = () => {
   ]
 
   return (
-    <div>
+    <div className="analytics-page">
       <div className="bili-banner" style={{ marginBottom: 20 }}>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <HistoryOutlined style={{ color: '#FB7299' }} />
@@ -122,7 +122,7 @@ const HistoryRanking: React.FC = () => {
         <p>回顾过去每天的排行榜快照 · 追踪视频排名变化</p>
       </div>
 
-      <div className="section-card">
+      <div className="section-card analytics-table-card">
         <div className="section-header">
           <div className="section-title">
             <HistoryOutlined style={{ color: '#FB7299' }} />
@@ -131,14 +131,16 @@ const HistoryRanking: React.FC = () => {
               共 <span style={{ color: '#FB7299', fontWeight: 600 }}>{total}</span> 个视频
             </span>
           </div>
-          <Select
-            value={selectedDate}
-            onChange={(v) => { setSelectedDate(v); setPage(1) }}
-            options={dates.map((d) => ({ label: d, value: d }))}
-            style={{ width: 160 }}
-            showSearch
-            optionFilterProp="label"
-          />
+          <div className="section-header-actions">
+            <Select
+              value={selectedDate}
+              onChange={(v) => { setSelectedDate(v); setPage(1) }}
+              options={dates.map((d) => ({ label: d, value: d }))}
+              style={{ width: 160 }}
+              showSearch
+              optionFilterProp="label"
+            />
+          </div>
         </div>
 
         <Spin spinning={loading}>
@@ -157,6 +159,7 @@ const HistoryRanking: React.FC = () => {
               }}
               onChange={(p) => { setPage(p.current ?? 1); setPageSize(p.pageSize ?? 20) }}
               size="middle"
+              scroll={{ x: 760 }}
             />
           )}
         </Spin>

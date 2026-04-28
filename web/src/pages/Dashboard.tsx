@@ -375,9 +375,9 @@ const Dashboard: React.FC = () => {
   const getStatValue = (key: keyof OverviewData) => overview?.[key] ?? 0
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="analytics-page" style={{ gap: 24 }}>
       <div className="bili-banner">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="analytics-banner-stack">
           <div>
             <h2>B站热门视频分析平台</h2>
             <p>实时追踪热门视频数据 · 洞察流量趋势 · 发现优质UP主</p>
@@ -401,7 +401,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <Row gutter={20}>
+      <Row gutter={[20, 20]} className="analytics-mobile-two-col">
         {STAT_CARDS.map((card, idx) => (
           <Col span={6} key={idx}>
             <div
@@ -429,15 +429,15 @@ const Dashboard: React.FC = () => {
         ))}
       </Row>
 
-      <Row gutter={20}>
+      <Row gutter={[20, 20]} className="analytics-mobile-split">
         <Col span={16}>
-          <div className="section-card">
+          <div className="section-card analytics-table-card">
             <div className="section-header">
               <div className="section-title">
                 <span className="title-dot" />
                 热门排行榜 Top 20
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className="section-header-actions">
                 <Input
                   placeholder="搜索标题或UP主"
                   prefix={<SearchOutlined style={{ color: 'var(--text-muted)' }} />}
@@ -471,6 +471,7 @@ const Dashboard: React.FC = () => {
               rowKey="bvid"
               pagination={false}
               size="middle"
+              scroll={{ x: 860 }}
               style={{ fontSize: 13 }}
             />
           </div>

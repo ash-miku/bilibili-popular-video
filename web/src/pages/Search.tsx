@@ -23,8 +23,13 @@ const Search: React.FC = () => {
   const [uploaderPage, setUploaderPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [activeTab, setActiveTab] = useState('video')
+  const [searchValue, setSearchValue] = useState(q)
   const videoModal = useVideoModal()
   const { addFavorite, removeFavorite, isFavorite } = useFavorites()
+
+  useEffect(() => {
+    setSearchValue(q)
+  }, [q])
 
   useEffect(() => {
     if (!q && inputRef.current) {
@@ -207,9 +212,10 @@ const Search: React.FC = () => {
       allowClear
       enterButton="搜索"
       size="large"
-      defaultValue={q}
+      value={searchValue}
+      onChange={(e) => setSearchValue(e.target.value)}
       onSearch={handleSearch}
-      style={{ maxWidth: 560, margin: '0 auto' }}
+      style={{ width: '100%', maxWidth: 560, margin: '0 auto' }}
     />
   )
 
@@ -241,7 +247,7 @@ const Search: React.FC = () => {
   }
 
   return (
-    <div>
+    <div className="analytics-page">
       <div className="bili-banner">
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <SearchOutlined style={{ color: '#FB7299' }} />
@@ -251,12 +257,12 @@ const Search: React.FC = () => {
           搜索 &quot;<span style={{ color: '#FB7299', fontWeight: 600 }}>{q}</span>&quot;
           ，找到 {activeTab === 'video' ? videoTotal : uploaderTotal} 条结果
         </p>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <div className="analytics-search-center">
           {searchInput}
         </div>
       </div>
 
-      <div className="section-card">
+      <div className="section-card analytics-table-card">
         <Tabs
           activeKey={activeTab}
           onChange={(key) => {
@@ -293,6 +299,7 @@ const Search: React.FC = () => {
                         },
                       }}
                       size="middle"
+                      scroll={{ x: 720 }}
                     />
                   )}
                 </Spin>
@@ -326,6 +333,7 @@ const Search: React.FC = () => {
                         },
                       }}
                       size="middle"
+                      scroll={{ x: 620 }}
                     />
                   )}
                 </Spin>
