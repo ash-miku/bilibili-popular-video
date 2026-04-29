@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Select, Spin, Empty, message } from 'antd'
 import { FireOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import dayjs, { Dayjs } from 'dayjs'
-import { getHotRanking, getCategoryDistribution, type VideoStat } from '../api'
+import { Dayjs } from 'dayjs'
+import { getHotRanking, getPartitionList, type VideoStat } from '../api'
 import { useVideoModal } from './Player'
 import { useFavorites } from '../contexts/FavoritesContext'
 import { formatCount } from '../utils/format'
@@ -22,13 +22,12 @@ const Hot: React.FC = () => {
   const videoModal = useVideoModal()
   const { addFavorite, removeFavorite, isFavorite } = useFavorites()
   useEffect(() => {
-    getCategoryDistribution(dayjs().subtract(1, 'day').format('YYYY-MM-DD'))
-      .then((dist) => {
-        const items = Object.entries(dist)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 20)
-          .map(([name, count]) => ({ label: `${name} (${count})`, value: name }))
-        setPartitions(items)
+    getPartitionList()
+      .then((list) => {
+        setPartitions(list.map((partition) => ({
+          label: partition.name,
+          value: partition.name,
+        })))
       })
       .catch(() => { message.error('分区列表加载失败') })
   }, [])

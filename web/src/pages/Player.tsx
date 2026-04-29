@@ -118,7 +118,7 @@ export const VideoModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         onCancel={handleClose}
         afterOpenChange={handleAfterOpenChange}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
         className="player-modal"
         width={'90vw'}
         style={{ maxWidth: 1600 }}

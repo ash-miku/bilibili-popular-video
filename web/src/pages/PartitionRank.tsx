@@ -24,7 +24,11 @@ const PartitionRank: React.FC = () => {
   const [selectedPartition, setSelectedPartition] = useState<number>(0)
 
   useEffect(() => {
-    getPartitionList().then(setPartitions).catch(() => {})
+    getPartitionList()
+      .then(setPartitions)
+      .catch(() => {
+        message.error('分区列表加载失败')
+      })
   }, [])
 
   useEffect(() => {
@@ -163,7 +167,7 @@ const PartitionRank: React.FC = () => {
                 }}>{p.label}</button>
             ))}
             <Select
-              value={selectedPartition || undefined}
+              value={selectedPartition}
               onChange={(v) => setSelectedPartition(v)}
               placeholder="选择分区"
               options={[{ label: '全部分区', value: 0 }, ...partitions.map((p) => ({ label: p.name, value: p.id }))]}
