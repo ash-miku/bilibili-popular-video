@@ -148,12 +148,14 @@ func (s *Scheduler) runDailyCrawl(ctx context.Context) {
 				slog.Info("scheduler: daily full crawl starting")
 				if err := s.crawler.CrawlDaily(ctx); err != nil {
 					slog.Error("scheduler: daily crawl failed", "error", err)
+					continue
 				}
 
 				if s.syncer != nil {
 					slog.Info("scheduler: syncing daily data to clickhouse")
 					if err := s.syncer.SyncDaily(ctx, today); err != nil {
 						slog.Error("scheduler: sync daily failed", "error", err)
+						continue
 					} else {
 						s.sendDailyNotification(ctx, today)
 					}

@@ -6,10 +6,12 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -78,6 +80,38 @@ func NewPlayerHandler(cfg *config.Config) *PlayerHandler {
 		client: &http.Client{Timeout: 15 * time.Second},
 		cache:  newVideoCache(),
 	}
+}
+
+func resolveFFmpegPath() string {
+	const bundledPath = "/app/bin/ffmpeg"
+	if _, err := os.Stat(bundledPath); err == nil {
+		return bundledPath
+	}
+	if path, err := exec.LookPath("ffmpeg"); err == nil {
+		return path
+	}
+	return bundledPath
+}
+
+func isAllowedProxyTarget(rawURL string) bool {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	if parsed.Scheme != "https" {
+		return false
+	}
+	hostname := strings.ToLower(parsed.Hostname())
+	if hostname == "" {
+		return false
+	}
+	allowedSuffixes := []string{"bilivideo.com", "bilivideo.cn", "hdslb.com", "bilibili.com"}
+	for _, suffix := range allowedSuffixes {
+		if hostname == suffix || strings.HasSuffix(hostname, "."+suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *PlayerHandler) GetVideoInfo(c *gin.Context) {
@@ -164,7 +198,7 @@ func (h *PlayerHandler) StreamVideo(c *gin.Context) {
 	tmpPath := cachePath + ".tmp"
 	defer os.Remove(tmpPath)
 
-	ffmpegPath := "/app/bin/ffmpeg"
+	ffmpegPath := resolveFFmpegPath()
 	args := []string{
 		"-i", proxyVideo,
 		"-i", proxyAudio,
@@ -200,6 +234,11 @@ func (h *PlayerHandler) ProxyURL(c *gin.Context) {
 	targetURL := c.Query("url")
 	if targetURL == "" {
 		c.Status(400)
+		return
+	}
+	if !isAllowedProxyTarget(targetURL) {
+		slog.Warn("proxy: rejected disallowed target", "url", targetURL)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -345,15 +384,16 @@ func (h *PlayerHandler) fetchDASHURLs(aid, cid int64, qn int) (videoURL, audioUR
 }
 
 func encodeURIComponent(s string) string {
-	result := ""
+	var builder strings.Builder
+	builder.Grow(len(s) * 3)
 	for _, c := range s {
 		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
 			c == '-' || c == '_' || c == '.' || c == '!' || c == '~' || c == '*' ||
 			c == '\'' || c == '(' || c == ')' {
-			result += string(c)
+			builder.WriteRune(c)
 		} else {
-			result += fmt.Sprintf("%%%02X", c)
+			fmt.Fprintf(&builder, "%%%02X", c)
 		}
 	}
-	return result
+	return builder.String()
 }
