@@ -123,7 +123,7 @@ function VideoCompare() {
         else setItemB(item)
 
         const end = dayjs().format('YYYY-MM-DD')
-        const start = dayjs().subtract(30, 'day').format('YYYY-MM-DD')
+        const start = dayjs().subtract(29, 'day').format('YYYY-MM-DD')
 
         const [curveData, trendData] = await Promise.all([
           getLaunchCurve(first.bvid).catch(() => []),

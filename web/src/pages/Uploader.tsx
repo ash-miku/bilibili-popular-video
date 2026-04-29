@@ -58,7 +58,7 @@ const Uploader: React.FC = () => {
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailData, setDetailData] = useState<UploaderStat[]>([])
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
-    dayjs().subtract(30, 'day'),
+    dayjs().subtract(29, 'day'),
     dayjs(),
   ])
 

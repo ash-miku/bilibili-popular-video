@@ -43,7 +43,7 @@ const SERIES_CONFIG = [
 const Trend: React.FC = () => {
   const [bvid, setBvid] = useState('')
   const [trendRange, setTrendRange] = useState<[Dayjs, Dayjs]>([
-    dayjs().subtract(30, 'day'),
+    dayjs().subtract(29, 'day'),
     dayjs(),
   ])
   const [rankRange, setRankRange] = useState<[Dayjs, Dayjs]>([

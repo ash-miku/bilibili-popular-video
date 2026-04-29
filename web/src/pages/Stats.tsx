@@ -35,7 +35,7 @@ const Stats: React.FC = () => {
 
   useEffect(() => {
     const end = dayjs().format('YYYY-MM-DD')
-    const start = dayjs().subtract(30, 'day').format('YYYY-MM-DD')
+    const start = dayjs().subtract(29, 'day').format('YYYY-MM-DD')
     setLoading(true)
     Promise.all([
       getCategoryTrend(0, start, end).catch(() => { message.error('加载趋势数据失败'); return [] }),
