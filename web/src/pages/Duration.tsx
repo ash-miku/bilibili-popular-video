@@ -6,10 +6,8 @@ import * as echarts from 'echarts/core'
 import { PieChart, BarChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent, TitleComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import { presets, presetToRange, type PresetKey } from '../utils/datePresets'
-import dayjs from 'dayjs'
-import { getHotRanking } from '../api'
-import { formatCount } from '../utils/format'
+import { presetToRange } from '../utils/datePresets'
+import { getGalleryList } from '../api'
 
 echarts.use([PieChart, BarChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent, CanvasRenderer])
 
@@ -17,19 +15,17 @@ const DurationPage: React.FC = () => {
   const getThemeColor = (varName: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(varName).trim()
   const [loading, setLoading] = useState(true)
-  const [activePreset, setActivePreset] = useState<PresetKey>('7d')
-  const [dateRange] = useState(() => presetToRange('7d'))
   const [durations, setDurations] = useState<number[]>([])
 
   useEffect(() => {
     setLoading(true)
-    const [start, end] = dateRange
+    const [start, end] = presetToRange('7d')
     const fetchAll = async () => {
       const allDurations: number[] = []
       let page = 1
       let total = Infinity
       while (allDurations.length < total) {
-        const res = await getHotRanking({
+        const res = await getGalleryList({
           start: start.format('YYYY-MM-DD'),
           end: end.format('YYYY-MM-DD'),
           page,
@@ -37,19 +33,19 @@ const DurationPage: React.FC = () => {
         })
         total = res.total ?? 0
         for (const v of res.list ?? []) {
-          if (((v as unknown) as Record<string, unknown>).duration) {
-            allDurations.push(((v as unknown) as Record<string, unknown>).duration as number)
+          if (typeof v.duration === 'number' && Number.isFinite(v.duration) && v.duration > 0) {
+            allDurations.push(v.duration)
           }
         }
+        if (!res.list || res.list.length === 0) break
         page++
-        if (page > 20) break
       }
       setDurations(allDurations)
     }
     fetchAll()
       .catch((err: Error) => message.error('加载数据失败: ' + err.message))
       .finally(() => setLoading(false))
-  }, [dateRange])
+  }, [])
 
   const buckets = React.useMemo(() => {
     const ranges = [
